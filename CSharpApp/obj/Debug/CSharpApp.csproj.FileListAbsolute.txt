@@ -1,0 +1,92 @@
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp\CSharpApp\obj\Debug\CSharpApp.csprojResolveAssemblyReference.cache
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp\CSharpApp\obj\Debug\CSharpApp.csproj.CoreCompileInputs.cache
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp\CSharpApp\bin\Debug\CSharpApp.exe.config
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp\CSharpApp\bin\Debug\CSharpApp.exe
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp\CSharpApp\bin\Debug\CSharpApp.pdb
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp\CSharpApp\bin\Debug\FSharpLib.dll
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp\CSharpApp\bin\Debug\FSharp.Core.dll
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp\CSharpApp\bin\Debug\FSharpLib.pdb
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp\CSharpApp\bin\Debug\FSharpLib.xml
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp\CSharpApp\bin\Debug\FSharp.Core.xml
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp\CSharpApp\obj\Debug\CSharpApp.exe
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp\CSharpApp\obj\Debug\CSharpApp.pdb
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp_II\CSharpApp\bin\Debug\CSharpApp.exe.config
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp_II\CSharpApp\bin\Debug\CSharpApp.exe
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp_II\CSharpApp\bin\Debug\CSharpApp.pdb
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp_II\CSharpApp\bin\Debug\FSharp.Core.dll
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp_II\CSharpApp\bin\Debug\FSharpLib.dll
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp_II\CSharpApp\bin\Debug\FSharpLib.pdb
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp_II\CSharpApp\bin\Debug\FSharpLib.xml
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp_II\CSharpApp\obj\Debug\CSharpApp.csprojResolveAssemblyReference.cache
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp_II\CSharpApp\obj\Debug\CSharpApp.csproj.CoreCompileInputs.cache
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp_II\CSharpApp\obj\Debug\CSharpApp.exe
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp_II\CSharpApp\obj\Debug\CSharpApp.pdb
+E:\CMP-7009A\Interop_F_Csharp_II\CSharpApp\bin\Debug\CSharpApp.exe.config
+E:\CMP-7009A\Interop_F_Csharp_II\CSharpApp\bin\Debug\CSharpApp.exe
+E:\CMP-7009A\Interop_F_Csharp_II\CSharpApp\bin\Debug\CSharpApp.pdb
+E:\CMP-7009A\Interop_F_Csharp_II\CSharpApp\bin\Debug\FSharp.Core.dll
+E:\CMP-7009A\Interop_F_Csharp_II\CSharpApp\bin\Debug\FSharpLib.dll
+E:\CMP-7009A\Interop_F_Csharp_II\CSharpApp\bin\Debug\FSharpLib.pdb
+E:\CMP-7009A\Interop_F_Csharp_II\CSharpApp\bin\Debug\FSharpLib.xml
+E:\CMP-7009A\Interop_F_Csharp_II\CSharpApp\obj\Debug\CSharpApp.csprojResolveAssemblyReference.cache
+E:\CMP-7009A\Interop_F_Csharp_II\CSharpApp\obj\Debug\CSharpApp.exe
+E:\CMP-7009A\Interop_F_Csharp_II\CSharpApp\obj\Debug\CSharpApp.pdb
+E:\CMP-7009A\Interop_F_Csharp_TEST\CSharpApp\bin\Debug\CSharpApp.exe.config
+E:\CMP-7009A\Interop_F_Csharp_TEST\CSharpApp\bin\Debug\CSharpApp.exe
+E:\CMP-7009A\Interop_F_Csharp_TEST\CSharpApp\bin\Debug\CSharpApp.pdb
+E:\CMP-7009A\Interop_F_Csharp_TEST\CSharpApp\bin\Debug\FSharp.Core.dll
+E:\CMP-7009A\Interop_F_Csharp_TEST\CSharpApp\bin\Debug\FSharpLib.dll
+E:\CMP-7009A\Interop_F_Csharp_TEST\CSharpApp\bin\Debug\FSharpLib.pdb
+E:\CMP-7009A\Interop_F_Csharp_TEST\CSharpApp\bin\Debug\FSharpLib.xml
+E:\CMP-7009A\Interop_F_Csharp_TEST\CSharpApp\obj\Debug\CSharpApp.csprojResolveAssemblyReference.cache
+E:\CMP-7009A\Interop_F_Csharp_TEST\CSharpApp\obj\Debug\CSharpApp.exe
+E:\CMP-7009A\Interop_F_Csharp_TEST\CSharpApp\obj\Debug\CSharpApp.pdb
+D:\WS03\CMP-7009A\CMP-7009A\Interop_F_Csharp_TEST_OLD01\CSharpApp\bin\Debug\CSharpApp.exe.config
+D:\WS03\CMP-7009A\CMP-7009A\Interop_F_Csharp_TEST_OLD01\CSharpApp\obj\Debug\CSharpApp.exe
+D:\WS03\CMP-7009A\CMP-7009A\Interop_F_Csharp_TEST_OLD01\CSharpApp\obj\Debug\CSharpApp.pdb
+D:\WS03\CMP-7009A\CMP-7009A\Interop_F_Csharp_STUB\CSharpApp\bin\Debug\CSharpApp.exe.config
+D:\WS03\CMP-7009A\CMP-7009A\Interop_F_Csharp_STUB\CSharpApp\bin\Debug\CSharpApp.exe
+D:\WS03\CMP-7009A\CMP-7009A\Interop_F_Csharp_STUB\CSharpApp\bin\Debug\CSharpApp.pdb
+D:\WS03\CMP-7009A\CMP-7009A\Interop_F_Csharp_STUB\CSharpApp\bin\Debug\FSharpLib.dll
+D:\WS03\CMP-7009A\CMP-7009A\Interop_F_Csharp_STUB\CSharpApp\bin\Debug\FSharpLib.pdb
+D:\WS03\CMP-7009A\CMP-7009A\Interop_F_Csharp_STUB\CSharpApp\bin\Debug\FSharpLib.xml
+D:\WS03\CMP-7009A\CMP-7009A\Interop_F_Csharp_STUB\CSharpApp\bin\Debug\FSharp.Core.xml
+D:\WS03\CMP-7009A\CMP-7009A\Interop_F_Csharp_STUB\CSharpApp\obj\Debug\CSharpApp.csprojResolveAssemblyReference.cache
+D:\WS03\CMP-7009A\CMP-7009A\Interop_F_Csharp_STUB\CSharpApp\obj\Debug\CSharpApp.csproj.CSharpApp.exe.config
+D:\WS03\CMP-7009A\CMP-7009A\Interop_F_Csharp_STUB\CSharpApp\obj\Debug\CSharpApp.exe
+D:\WS03\CMP-7009A\CMP-7009A\Interop_F_Csharp_STUB\CSharpApp\obj\Debug\CSharpApp.pdb
+D:\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2024\Interop_F_Csharp_STUB\CSharpApp\bin\Debug\CSharpApp.exe.config
+D:\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2024\Interop_F_Csharp_STUB\CSharpApp\bin\Debug\CSharpApp.exe
+D:\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2024\Interop_F_Csharp_STUB\CSharpApp\bin\Debug\CSharpApp.pdb
+D:\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2024\Interop_F_Csharp_STUB\CSharpApp\bin\Debug\FSharpLib.dll
+D:\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2024\Interop_F_Csharp_STUB\CSharpApp\bin\Debug\FSharpLib.pdb
+D:\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2024\Interop_F_Csharp_STUB\CSharpApp\bin\Debug\FSharpLib.xml
+D:\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2024\Interop_F_Csharp_STUB\CSharpApp\bin\Debug\FSharp.Core.xml
+D:\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2024\Interop_F_Csharp_STUB\CSharpApp\obj\Debug\CSharpApp.csproj.AssemblyReference.cache
+D:\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2024\Interop_F_Csharp_STUB\CSharpApp\obj\Debug\CSharpApp.csproj.CoreCompileInputs.cache
+D:\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2024\Interop_F_Csharp_STUB\CSharpApp\obj\Debug\CSharpApp.csproj.Up2Date
+D:\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2024\Interop_F_Csharp_STUB\CSharpApp\obj\Debug\CSharpApp.exe
+D:\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2024\Interop_F_Csharp_STUB\CSharpApp\obj\Debug\CSharpApp.pdb
+G:\Local Disk\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2025\PROJECT\Interop_F_Csharp_STUB\CSharpApp\bin\Debug\CSharpApp.exe.config
+G:\Local Disk\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2025\PROJECT\Interop_F_Csharp_STUB\CSharpApp\bin\Debug\CSharpApp.exe
+G:\Local Disk\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2025\PROJECT\Interop_F_Csharp_STUB\CSharpApp\bin\Debug\CSharpApp.pdb
+G:\Local Disk\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2025\PROJECT\Interop_F_Csharp_STUB\CSharpApp\bin\Debug\FSharpLib.dll
+G:\Local Disk\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2025\PROJECT\Interop_F_Csharp_STUB\CSharpApp\bin\Debug\FSharpLib.pdb
+G:\Local Disk\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2025\PROJECT\Interop_F_Csharp_STUB\CSharpApp\bin\Debug\FSharpLib.xml
+G:\Local Disk\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2025\PROJECT\Interop_F_Csharp_STUB\CSharpApp\obj\Debug\CSharpApp.csproj.AssemblyReference.cache
+G:\Local Disk\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2025\PROJECT\Interop_F_Csharp_STUB\CSharpApp\obj\Debug\CSharpApp.csproj.CoreCompileInputs.cache
+G:\Local Disk\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2025\PROJECT\Interop_F_Csharp_STUB\CSharpApp\obj\Debug\CSharpApp.csproj.Up2Date
+G:\Local Disk\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2025\PROJECT\Interop_F_Csharp_STUB\CSharpApp\obj\Debug\CSharpApp.exe
+G:\Local Disk\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2025\PROJECT\Interop_F_Csharp_STUB\CSharpApp\obj\Debug\CSharpApp.pdb
+C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\CSharpApp\bin\Debug\CSharpApp.exe.config
+C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\CSharpApp\bin\Debug\CSharpApp.exe
+C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\CSharpApp\bin\Debug\CSharpApp.pdb
+C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\CSharpApp\bin\Debug\FSharpLib.dll
+C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\CSharpApp\bin\Debug\FSharpLib.pdb
+C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\CSharpApp\bin\Debug\FSharpLib.xml
+C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\CSharpApp\obj\Debug\CSharpApp.csproj.AssemblyReference.cache
+C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\CSharpApp\obj\Debug\CSharpApp.exe.config
+C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\CSharpApp\obj\Debug\CSharpApp.csproj.CoreCompileInputs.cache
+C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\CSharpApp\obj\Debug\CSharpApp.csproj.Up2Date
+C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\CSharpApp\obj\Debug\CSharpApp.exe
+C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\CSharpApp\obj\Debug\CSharpApp.pdb

@@ -1,0 +1,73 @@
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp\FSharpLib\obj\Debug\FSharpLib.fsproj.CoreCompileInputs.cache
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp\FSharpLib\bin\Debug\FSharpLib.XML
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp\FSharpLib\bin\Debug\FSharpLib.dll
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp\FSharpLib\bin\Debug\FSharpLib.pdb
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp\FSharpLib\bin\Debug\FSharp.Core.dll
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp\FSharpLib\bin\Debug\System.ValueTuple.dll
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp\FSharpLib\bin\Debug\FSharp.Core.xml
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp\FSharpLib\obj\Debug\FSharpLib.dll
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp\FSharpLib\obj\Debug\FSharpLib.pdb
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp_II\FSharpLib\bin\Debug\FSharpLib.XML
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp_II\FSharpLib\bin\Debug\FSharpLib.dll
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp_II\FSharpLib\bin\Debug\FSharpLib.pdb
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp_II\FSharpLib\bin\Debug\FSharp.Core.dll
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp_II\FSharpLib\bin\Debug\System.ValueTuple.dll
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp_II\FSharpLib\bin\Debug\FSharp.Core.xml
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp_II\FSharpLib\obj\Debug\FSharpLib.fsproj.CoreCompileInputs.cache
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp_II\FSharpLib\obj\Debug\FSharpLib.dll
+D:\WS02\TEACHING\CMP-7009A\LECTURES_CW_2018\CT_01\Interop_F_Csharp_II\FSharpLib\obj\Debug\FSharpLib.pdb
+E:\CMP-7009A\Interop_F_Csharp_II\FSharpLib\bin\Debug\FSharpLib.XML
+E:\CMP-7009A\Interop_F_Csharp_II\FSharpLib\bin\Debug\FSharpLib.dll
+E:\CMP-7009A\Interop_F_Csharp_II\FSharpLib\bin\Debug\FSharpLib.pdb
+E:\CMP-7009A\Interop_F_Csharp_II\FSharpLib\bin\Debug\FSharp.Core.dll
+E:\CMP-7009A\Interop_F_Csharp_II\FSharpLib\bin\Debug\System.ValueTuple.dll
+E:\CMP-7009A\Interop_F_Csharp_II\FSharpLib\bin\Debug\FSharp.Core.xml
+E:\CMP-7009A\Interop_F_Csharp_II\FSharpLib\obj\Debug\FSharpLib.dll
+E:\CMP-7009A\Interop_F_Csharp_II\FSharpLib\obj\Debug\FSharpLib.pdb
+E:\CMP-7009A\Interop_F_Csharp_TEST\FSharpLib\bin\Debug\FSharpLib.XML
+E:\CMP-7009A\Interop_F_Csharp_TEST\FSharpLib\bin\Debug\FSharpLib.dll
+E:\CMP-7009A\Interop_F_Csharp_TEST\FSharpLib\bin\Debug\FSharpLib.pdb
+E:\CMP-7009A\Interop_F_Csharp_TEST\FSharpLib\bin\Debug\FSharp.Core.dll
+E:\CMP-7009A\Interop_F_Csharp_TEST\FSharpLib\bin\Debug\System.ValueTuple.dll
+E:\CMP-7009A\Interop_F_Csharp_TEST\FSharpLib\bin\Debug\FSharp.Core.xml
+E:\CMP-7009A\Interop_F_Csharp_TEST\FSharpLib\obj\Debug\FSharpLib.dll
+E:\CMP-7009A\Interop_F_Csharp_TEST\FSharpLib\obj\Debug\FSharpLib.pdb
+D:\WS03\CMP-7009A\CMP-7009A\Interop_F_Csharp_STUB\FSharpLib\bin\Debug\FSharpLib.XML
+D:\WS03\CMP-7009A\CMP-7009A\Interop_F_Csharp_STUB\FSharpLib\bin\Debug\FSharpLib.dll
+D:\WS03\CMP-7009A\CMP-7009A\Interop_F_Csharp_STUB\FSharpLib\bin\Debug\FSharpLib.pdb
+D:\WS03\CMP-7009A\CMP-7009A\Interop_F_Csharp_STUB\FSharpLib\bin\Debug\FSharp.Core.dll
+D:\WS03\CMP-7009A\CMP-7009A\Interop_F_Csharp_STUB\FSharpLib\bin\Debug\System.ValueTuple.dll
+D:\WS03\CMP-7009A\CMP-7009A\Interop_F_Csharp_STUB\FSharpLib\bin\Debug\FSharp.Core.xml
+D:\WS03\CMP-7009A\CMP-7009A\Interop_F_Csharp_STUB\FSharpLib\obj\Debug\FSharpLib.dll
+D:\WS03\CMP-7009A\CMP-7009A\Interop_F_Csharp_STUB\FSharpLib\obj\Debug\FSharpLib.pdb
+D:\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2024\Interop_F_Csharp_STUB\FSharpLib\bin\Debug\FSharpLib.XML
+D:\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2024\Interop_F_Csharp_STUB\FSharpLib\bin\Debug\FSharpLib.dll
+D:\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2024\Interop_F_Csharp_STUB\FSharpLib\bin\Debug\FSharpLib.pdb
+D:\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2024\Interop_F_Csharp_STUB\FSharpLib\bin\Debug\FSharp.Core.dll
+D:\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2024\Interop_F_Csharp_STUB\FSharpLib\bin\Debug\System.ValueTuple.dll
+D:\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2024\Interop_F_Csharp_STUB\FSharpLib\bin\Debug\FSharp.Core.xml
+D:\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2024\Interop_F_Csharp_STUB\FSharpLib\obj\Debug\FSharpLib.fsproj.AssemblyReference.cache
+D:\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2024\Interop_F_Csharp_STUB\FSharpLib\obj\Debug\FSharpLib.fsproj.CoreCompileInputs.cache
+D:\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2024\Interop_F_Csharp_STUB\FSharpLib\obj\Debug\FSharpLib.fsproj.Up2Date
+D:\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2024\Interop_F_Csharp_STUB\FSharpLib\obj\Debug\FSharpLib.dll
+D:\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2024\Interop_F_Csharp_STUB\FSharpLib\obj\Debug\FSharpLib.pdb
+G:\Local Disk\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2025\PROJECT\Interop_F_Csharp_STUB\FSharpLib\bin\Debug\FSharpLib.XML
+G:\Local Disk\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2025\PROJECT\Interop_F_Csharp_STUB\FSharpLib\bin\Debug\FSharpLib.dll
+G:\Local Disk\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2025\PROJECT\Interop_F_Csharp_STUB\FSharpLib\bin\Debug\FSharpLib.pdb
+G:\Local Disk\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2025\PROJECT\Interop_F_Csharp_STUB\FSharpLib\bin\Debug\FSharp.Core.dll
+G:\Local Disk\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2025\PROJECT\Interop_F_Csharp_STUB\FSharpLib\bin\Debug\FSharp.Core.xml
+G:\Local Disk\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2025\PROJECT\Interop_F_Csharp_STUB\FSharpLib\obj\Debug\FSharpLib.fsproj.AssemblyReference.cache
+G:\Local Disk\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2025\PROJECT\Interop_F_Csharp_STUB\FSharpLib\obj\Debug\FSharpLib.fsproj.CoreCompileInputs.cache
+G:\Local Disk\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2025\PROJECT\Interop_F_Csharp_STUB\FSharpLib\obj\Debug\FSharpLib.fsproj.Up2Date
+G:\Local Disk\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2025\PROJECT\Interop_F_Csharp_STUB\FSharpLib\obj\Debug\FSharpLib.dll
+G:\Local Disk\WS02\TEACHING\CMP-7009_6048A\LECTURES_CW_2025\PROJECT\Interop_F_Csharp_STUB\FSharpLib\obj\Debug\FSharpLib.pdb
+C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\FSharpLib\bin\Debug\FSharpLib.XML
+C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\FSharpLib\bin\Debug\FSharpLib.dll
+C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\FSharpLib\bin\Debug\FSharpLib.pdb
+C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\FSharpLib\bin\Debug\FSharp.Core.dll
+C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\FSharpLib\bin\Debug\FSharp.Core.xml
+C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\FSharpLib\obj\Debug\FSharpLib.fsproj.AssemblyReference.cache
+C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\FSharpLib\obj\Debug\FSharpLib.fsproj.CoreCompileInputs.cache
+C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\FSharpLib\obj\Debug\FSharpLib.fsproj.Up2Date
+C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\FSharpLib\obj\Debug\FSharpLib.dll
+C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\FSharpLib\obj\Debug\FSharpLib.pdb
