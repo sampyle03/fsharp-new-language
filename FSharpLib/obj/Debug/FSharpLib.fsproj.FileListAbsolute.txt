@@ -71,3 +71,13 @@ C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\
 C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\FSharpLib\obj\Debug\FSharpLib.fsproj.Up2Date
 C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\FSharpLib\obj\Debug\FSharpLib.dll
 C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\FSharpLib\obj\Debug\FSharpLib.pdb
+C:\Users\sampy\Source\Repos\fsharp-new-language\FSharpLib\bin\Debug\FSharpLib.XML
+C:\Users\sampy\Source\Repos\fsharp-new-language\FSharpLib\bin\Debug\FSharpLib.dll
+C:\Users\sampy\Source\Repos\fsharp-new-language\FSharpLib\bin\Debug\FSharpLib.pdb
+C:\Users\sampy\Source\Repos\fsharp-new-language\FSharpLib\bin\Debug\FSharp.Core.dll
+C:\Users\sampy\Source\Repos\fsharp-new-language\FSharpLib\bin\Debug\FSharp.Core.xml
+C:\Users\sampy\Source\Repos\fsharp-new-language\FSharpLib\obj\Debug\FSharpLib.fsproj.AssemblyReference.cache
+C:\Users\sampy\Source\Repos\fsharp-new-language\FSharpLib\obj\Debug\FSharpLib.fsproj.CoreCompileInputs.cache
+C:\Users\sampy\Source\Repos\fsharp-new-language\FSharpLib\obj\Debug\FSharpLib.fsproj.Up2Date
+C:\Users\sampy\Source\Repos\fsharp-new-language\FSharpLib\obj\Debug\FSharpLib.dll
+C:\Users\sampy\Source\Repos\fsharp-new-language\FSharpLib\obj\Debug\FSharpLib.pdb

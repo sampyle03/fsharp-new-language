@@ -14,19 +14,21 @@ module Numera =
 
     let add(x:int, y:int) : int = x + y
 
-    let str2lst s = [for c in s -> c]
-    let isblank c = System.Char.IsWhiteSpace c
-    let isdigit c = System.Char.IsDigit c
+    let str2lst s = [for c in s -> c] // Converts the input string to list of characters
+    let isBlank c = System.Char.IsWhiteSpace c
+    let isDigit c = System.Char.IsDigit c
     let lexError = System.Exception("Lexer error")
-    let intVal (c:char) = (int)((int)c - (int)'0')
+    let charToDigit (c:char) = (int)((int)c - (int)'0')
     let parseError = System.Exception("Parser error")
 
-    let rec scInt(iStr, iVal) = 
-        match iStr with
-        c :: tail when isdigit c -> scInt(tail, 10*iVal+(intVal c))
-        | _ -> (iStr, iVal)
+    let rec scanInt(remaining, value) = 
+        match remaining with
+        c :: tail when isDigit c -> scanInt(tail, 10*value+(charToDigit c))
+        | _ -> (remaining, value)
 
+    // Lexer function
     let lexer input = 
+        // Recursive scan function
         let rec scan input =
             match input with
             | [] -> []
@@ -36,76 +38,82 @@ module Numera =
             | '/'::tail -> Div :: scan tail
             | '('::tail -> Lpar:: scan tail
             | ')'::tail -> Rpar:: scan tail
-            | c :: tail when isblank c -> scan tail
-            | c :: tail when isdigit c -> let (iStr, iVal) = scInt(tail, intVal c) 
-                                          Num iVal :: scan iStr
+            | c :: tail when isBlank c -> scan tail
+            | c :: tail when isDigit c -> let (remaining, value) = scanInt(tail, charToDigit c) 
+                                          Num value :: scan remaining
             | _ -> raise lexError
-        scan (str2lst input)
 
-    let getInputString() : string = 
+        scan (str2lst input) // Scans the list of tokens from input string
+
+    let readInputString() : string = 
         Console.Write("Enter an expression: ")
         Console.ReadLine()
 
     // Grammar in BNF:
-    // <E>        ::= <T> <Eopt>
-    // <Eopt>     ::= "+" <T> <Eopt> | "-" <T> <Eopt> | <empty>
-    // <T>        ::= <NR> <Topt>
-    // <Topt>     ::= "*" <NR> <Topt> | "/" <NR> <Topt> | <empty>
-    // <NR>       ::= "Num" <value> | "(" <E> ")"
+    // <expr> ::= <term>
+    //  | <expr> + <term>
+    //  | <expr> - <term>
+    // <term> ::= <factor>
+    //  | <term> * <factor>
+    //  | <term> / <factor>
+    // <factor> ::= <int> | (<expr>)
+    // <int> ::= <digit> | <int><digit>
+    // <digit> ::= 0|1|2|3|4|5|6|7|8|9
 
-    let parser tList = 
-        let rec E tList = (T >> Eopt) tList         // >> is forward function composition operator: let inline (>>) f g x = g(f x)
-        and Eopt tList = 
-            match tList with
-            | Add :: tail -> (T >> Eopt) tail
-            | Sub :: tail -> (T >> Eopt) tail
-            | _ -> tList
-        and T tList = (NR >> Topt) tList
-        and Topt tList =
-            match tList with
-            | Mul :: tail -> (NR >> Topt) tail
-            | Div :: tail -> (NR >> Topt) tail
-            | _ -> tList
-        and NR tList =
-            match tList with 
+    // parser checks that the input token list conforms to the grammar
+    let parser tokenList = 
+        let rec parseExpression tokens = (parseTerm >> parseRestOfExpression) tokens         // >> is forward function composition operator: let inline (>>) f g x = g(f (x))
+        and parseRestOfExpression tokens = 
+            match tokens with
+            | Add :: tail -> (parseTerm >> parseRestOfExpression) tail
+            | Sub :: tail -> (parseTerm >> parseRestOfExpression) tail
+            | _ -> tokens
+        and parseTerm tokens = (parseFactor >> parseRestOfTerm) tokens
+        and parseRestOfTerm tokens =
+            match tokens with
+            | Mul :: tail -> (parseFactor >> parseRestOfTerm) tail
+            | Div :: tail -> (parseFactor >> parseRestOfTerm) tail
+            | _ -> tokens
+        and parseFactor tokens =
+            match tokens with 
             | Num value :: tail -> tail
-            | Lpar :: tail -> match E tail with 
+            | Lpar :: tail -> match parseExpression tail with 
                               | Rpar :: tail -> tail
                               | _ -> raise parseError
             | _ -> raise parseError
-        E tList
+        parseExpression tokenList
 
-    let parseNeval tList = 
-        let rec E tList = (T >> Eopt) tList
-        and Eopt (tList, value) = 
-            match tList with
-            | Add :: tail -> let (tLst, tval) = T tail
-                             Eopt (tLst, value + tval)
-            | Sub :: tail -> let (tLst, tval) = T tail
-                             Eopt (tLst, value - tval)
-            | _ -> (tList, value)
-        and T tList = (NR >> Topt) tList
-        and Topt (tList, value) =
-            match tList with
-            | Mul :: tail -> let (tLst, tval) = NR tail
-                             Topt (tLst, value * tval)
-            | Div :: tail -> let (tLst, tval) = NR tail
-                             Topt (tLst, value / tval)
-            | _ -> (tList, value)
-        and NR tList =
-            match tList with 
+    let parseAndEval tokenList = 
+        let rec evalExpression tokens = (evalTerm >> evalRestOfExpression) tokenList
+        and evalRestOfExpression (tokens, value) = 
+            match tokens with
+            | Add :: tail -> let (tokenRemainder, termVal) = evalTerm tail
+                             evalRestOfExpression (tokenRemainder, value + termVal)
+            | Sub :: tail -> let (tokenRemainder, termVal) = evalTerm tail
+                             evalRestOfExpression (tokenRemainder, value - termVal)
+            | _ -> (tokens, value)
+        and evalTerm tokens = (evalFactor >> evalRestOfTerm) tokens
+        and evalRestOfTerm (tokens, value) =
+            match tokens with
+            | Mul :: tail -> let (tokenRemainder, termVal) = evalFactor tail
+                             evalRestOfTerm (tokens, value * termVal)
+            | Div :: tail -> let (tokenRemainder, termVal) = evalFactor tail
+                             evalRestOfTerm (tokens, value / termVal)
+            | _ -> (tokens, value)
+        and evalFactor tokens =
+            match tokens with 
             | Num value :: tail -> (tail, value)
-            | Lpar :: tail -> let (tLst, tval) = E tail
-                              match tLst with 
-                              | Rpar :: tail -> (tail, tval)
+            | Lpar :: tail -> let (tokenRemainder, termVal) = evalExpression tail
+                              match tokenRemainder with 
+                              | Rpar :: tail -> (tail, termVal)
                               | _ -> raise parseError
             | _ -> raise parseError
-        E tList
+        evalExpression tokenList
 
-    let rec printTList (lst:list<terminal>) : list<string> = 
+    let rec printTokenList (lst:list<terminal>) : list<string> = 
         match lst with
         head::tail -> Console.Write("{0} ",head.ToString())
-                      printTList tail
+                      printTokenList tail
                   
         | [] -> Console.Write("EOL\n")
                 []
@@ -113,11 +121,11 @@ module Numera =
 
     [<EntryPoint>]
     let main argv  =
-        Console.WriteLine("Simple Interpreter")
-        let input:string = getInputString()
-        let oList = lexer input
-        let sList = printTList oList;
-        let pList = printTList (parser oList)
-        let Out = parseNeval oList
+        Console.WriteLine("Simple Interpreter - Enter Code")
+        let input:string = readInputString()
+        let operationList = lexer input // Converts input to operation list e.g. "91 + 1" -> [Num 91; Add; Num 1]
+        let sList = printTokenList operationList; // Prints the operation list e.g. > Num 91 Add Num 1 EOL
+        let pList = printTokenList (parser operationList) // Prints the remaining list after parsing e.g. > EOL
+        let Out = parseAndEval operationList
         Console.WriteLine("Result = {0}", snd Out)
         0

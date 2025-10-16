@@ -90,3 +90,15 @@ C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\
 C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\CSharpApp\obj\Debug\CSharpApp.csproj.Up2Date
 C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\CSharpApp\obj\Debug\CSharpApp.exe
 C:\Users\sampy\OneDrive - University of East Anglia\Year 4\Advanced Programming\Interop_F_Csharp_STUB\CSharpApp\obj\Debug\CSharpApp.pdb
+C:\Users\sampy\Source\Repos\fsharp-new-language\CSharpApp\bin\Debug\CSharpApp.exe.config
+C:\Users\sampy\Source\Repos\fsharp-new-language\CSharpApp\bin\Debug\CSharpApp.exe
+C:\Users\sampy\Source\Repos\fsharp-new-language\CSharpApp\bin\Debug\CSharpApp.pdb
+C:\Users\sampy\Source\Repos\fsharp-new-language\CSharpApp\bin\Debug\FSharpLib.dll
+C:\Users\sampy\Source\Repos\fsharp-new-language\CSharpApp\bin\Debug\FSharpLib.pdb
+C:\Users\sampy\Source\Repos\fsharp-new-language\CSharpApp\bin\Debug\FSharpLib.xml
+C:\Users\sampy\Source\Repos\fsharp-new-language\CSharpApp\obj\Debug\CSharpApp.csproj.AssemblyReference.cache
+C:\Users\sampy\Source\Repos\fsharp-new-language\CSharpApp\obj\Debug\CSharpApp.exe.config
+C:\Users\sampy\Source\Repos\fsharp-new-language\CSharpApp\obj\Debug\CSharpApp.csproj.CoreCompileInputs.cache
+C:\Users\sampy\Source\Repos\fsharp-new-language\CSharpApp\obj\Debug\CSharpApp.csproj.Up2Date
+C:\Users\sampy\Source\Repos\fsharp-new-language\CSharpApp\obj\Debug\CSharpApp.exe
+C:\Users\sampy\Source\Repos\fsharp-new-language\CSharpApp\obj\Debug\CSharpApp.pdb
