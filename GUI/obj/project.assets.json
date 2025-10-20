@@ -1,0 +1,99 @@
+{
+  "version": 3,
+  "targets": {
+    "net8.0-windows7.0": {}
+  },
+  "libraries": {},
+  "projectFileDependencyGroups": {
+    "net8.0-windows7.0": [
+      "C:\\Users\\liblo\\OneDrive - University of East Anglia\\Masters\\adv prog\\CW 001\\git clone\\FSharpLib1\\FSharpLib.fsproj"
+    ]
+  },
+  "packageFolders": {
+    "C:\\Users\\liblo\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
+  },
+  "project": {
+    "version": "1.0.0",
+    "restore": {
+      "projectUniqueName": "C:\\Users\\liblo\\OneDrive - University of East Anglia\\Masters\\adv prog\\CW 001\\git clone\\GUI\\Numera.GUI.csproj",
+      "projectName": "Numera.GUI",
+      "projectPath": "C:\\Users\\liblo\\OneDrive - University of East Anglia\\Masters\\adv prog\\CW 001\\git clone\\GUI\\Numera.GUI.csproj",
+      "packagesPath": "C:\\Users\\liblo\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\liblo\\OneDrive - University of East Anglia\\Masters\\adv prog\\CW 001\\git clone\\GUI\\obj\\",
+      "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+      ],
+      "configFilePaths": [
+        "C:\\Users\\liblo\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+      ],
+      "originalTargetFrameworks": [
+        "net8.0-windows"
+      ],
+      "sources": {
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+        "https://api.nuget.org/v3/index.json": {}
+      },
+      "frameworks": {
+        "net8.0-windows7.0": {
+          "targetAlias": "net8.0-windows",
+          "projectReferences": {
+            "C:\\Users\\liblo\\OneDrive - University of East Anglia\\Masters\\adv prog\\CW 001\\git clone\\FSharpLib1\\FSharpLib.fsproj": {
+              "projectPath": "C:\\Users\\liblo\\OneDrive - University of East Anglia\\Masters\\adv prog\\CW 001\\git clone\\FSharpLib1\\FSharpLib.fsproj"
+            }
+          }
+        }
+      },
+      "warningProperties": {
+        "warnAsError": [
+          "NU1605"
+        ]
+      },
+      "restoreAuditProperties": {
+        "enableAudit": "true",
+        "auditLevel": "low",
+        "auditMode": "direct"
+      },
+      "SdkAnalysisLevel": "9.0.300"
+    },
+    "frameworks": {
+      "net8.0-windows7.0": {
+        "targetAlias": "net8.0-windows",
+        "imports": [
+          "net461",
+          "net462",
+          "net47",
+          "net471",
+          "net472",
+          "net48",
+          "net481"
+        ],
+        "assetTargetFallback": true,
+        "warn": true,
+        "frameworkReferences": {
+          "Microsoft.NETCore.App": {
+            "privateAssets": "all"
+          },
+          "Microsoft.WindowsDesktop.App.WPF": {
+            "privateAssets": "none"
+          }
+        },
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
+      }
+    }
+  },
+  "logs": [
+    {
+      "code": "NU1104",
+      "level": "Error",
+      "message": "Unable to find project 'C:\\Users\\liblo\\OneDrive - University of East Anglia\\Masters\\adv prog\\CW 001\\git clone\\FSharpLib1\\FSharpLib.fsproj'. Check that the project reference is valid and that the project file exists.",
+      "libraryId": "C:\\Users\\liblo\\OneDrive - University of East Anglia\\Masters\\adv prog\\CW 001\\git clone\\FSharpLib1\\FSharpLib.fsproj",
+      "targetGraphs": [
+        "net8.0-windows7.0"
+      ]
+    }
+  ]
+}

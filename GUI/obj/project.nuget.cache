@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "dgSpecHash": "YwbolPtxT/M=",
+  "success": false,
+  "projectFilePath": "C:\\Users\\liblo\\OneDrive - University of East Anglia\\Masters\\adv prog\\CW 001\\git clone\\GUI\\Numera.GUI.csproj",
+  "expectedPackageFiles": [],
+  "logs": [
+    {
+      "code": "NU1104",
+      "level": "Error",
+      "message": "Unable to find project 'C:\\Users\\liblo\\OneDrive - University of East Anglia\\Masters\\adv prog\\CW 001\\git clone\\FSharpLib1\\FSharpLib.fsproj'. Check that the project reference is valid and that the project file exists.",
+      "projectPath": "C:\\Users\\liblo\\OneDrive - University of East Anglia\\Masters\\adv prog\\CW 001\\git clone\\GUI\\Numera.GUI.csproj",
+      "filePath": "C:\\Users\\liblo\\OneDrive - University of East Anglia\\Masters\\adv prog\\CW 001\\git clone\\GUI\\Numera.GUI.csproj",
+      "libraryId": "C:\\Users\\liblo\\OneDrive - University of East Anglia\\Masters\\adv prog\\CW 001\\git clone\\FSharpLib1\\FSharpLib.fsproj",
+      "targetGraphs": [
+        "net8.0-windows7.0"
+      ]
+    }
+  ]
+}
