@@ -88,16 +88,27 @@ module Numera =
     // terminal, parser and evaluator
 
     //<statement> ::= 'let' <type> <identifier> '=' <expr> ';' | <expr>
+    //<type> ::= <int> | <float> | <bool>
     //<expr> ::= <term>
         //| <expr> + <term>
         //| <expr> - <term>
-    //<term> ::= <factor>
-        //| <term> * <factor>
-        //| <term> / <factor>
-    //<power> ::= <factor>^<power>
-    //<factor> ::= <int> | (<expr>)
+    //<term> ::= <power>
+        //| <term> * <power>
+        //| <term> / <power>
+    //<unary> ::= -<unary> | <power>
+    //<power> ::= <factor> ^ <power> | <factor>
+    //<factor> ::= <number>
+        //| <identifier>
+        //| <function> <factor>
+        //| "(" <expr> ")"
+        //| <expr>
+    //<number> ::= <int> | <float>
+    //<float> ::= <int> . <int>
+    //<function> ::= sin | cos | tan
     //<int> ::= <digit> | <int><digit>
+    //<identifier>   ::= letter { letter | digit | "_" }
     //<digit> ::= 0|1|2|3|4|5|6|7|8|9
+    //<boolean> ::= true | false
 
     type terminal = 
         Add | Sub | Mul | Div | Rem | Power | Lpar | Rpar
@@ -160,6 +171,12 @@ module Numera =
     let lexError = System.Exception("Lexer error")
     let charToDigit (c:char) = (int)((int)c - (int)'0')
     let parseError = System.Exception("Parser error")
+
+    let isFloat (value) =
+        let s = string value
+        let mutable d = 0.0
+        let ok = Double.TryParse(s, &d)
+        ok && s.Contains(".")
 
     let rec scanDecimal(chars: char list) (value: string) : (char list * string) =
         match chars with
@@ -254,8 +271,8 @@ module Numera =
             | _ -> tokens
 
         and parseTerm tokens =
-            let powerRest = parsePower tokens
-            parseRestOfTerm powerRest
+            let unaryRest = parseTerm tokens
+            parseRestOfTerm unaryRest
 
         and parseRestOfTerm tokens =
             match tokens with
@@ -269,6 +286,13 @@ module Numera =
                 let powerRest = parsePower tail
                 parseRestOfTerm powerRest
             | _ -> tokens
+
+         and parseUnary tokens =
+            match tokens with
+            | Sub :: tail ->
+                let unaryRest = parseUnary tail
+                unaryRest
+            | _ -> parsePower tokens
 
         and parsePower tokens =
             let factorRest = parseFactor tokens
@@ -332,19 +356,31 @@ module Numera =
             | Sub :: tail -> let (tokenRemainder, termVal) = evalTerm tail
                              evalRestOfExpression (tokenRemainder, value - termVal)
             | _ -> (tokens, value)
-        and evalTerm tokens = (evalPower >> evalRestOfTerm) tokens
+        and evalTerm tokens = (evalUnary >> evalRestOfTerm) tokens
         and evalRestOfTerm (tokens, value) =
             match tokens with
-            | Mul :: tail -> let (tokenRemainder, factorVal) = evalFactor tail
+            | Mul :: tail -> let (tokenRemainder, factorVal) = evalUnary tail
                              evalRestOfTerm (tokenRemainder, value * factorVal)
-            | Div :: tail -> let (tokenRemainder, factorVal) = evalFactor tail
+            | Div :: tail -> let (tokenRemainder, factorVal) = evalUnary tail
                              if factorVal = 0.0 then
                                 raise (System.Exception("Division by zero"))
                              else
-                                evalRestOfTerm (tokenRemainder, value / factorVal)
-            | Rem :: tail -> let (tokenRemainder, factorVal) = evalFactor tail
+                                printfn "valueeee %A" factorVal
+                                if (isFloat value && isFloat factorVal) then
+                                    let intValue = int value
+                                    let intFactorVal = int factorVal
+                                    evalRestOfTerm(tokenRemainder, float (intValue / intFactorVal))
+                                else
+                                    evalRestOfTerm (tokenRemainder, value / factorVal)
+            | Rem :: tail -> let (tokenRemainder, factorVal) = evalUnary tail
                              evalRestOfTerm (tokenRemainder, floatRem value factorVal)
             | _ -> (tokens, value)
+        and evalUnary tokens =
+            match tokens with
+            | Sub :: tail -> 
+                let (tokenRemainder, value) = evalUnary tail
+                (tokenRemainder, -value)
+            | _ -> evalPower tokens
         and evalPower tokens =
             let (remainderAfterBase, baseVal) = evalFactor tokens
             match remainderAfterBase with
@@ -357,7 +393,6 @@ module Numera =
             | NumInt value :: tail -> (tail, float value)
             | NumFloat value :: tail -> (tail, value)
             | Identifier name :: tail ->
-                // function application: sin/cos/tan(expect a following factor)
                 if name = "sin" || name = "cos" || name = "tan" then
                     let (rest, v) = evalFactor tail
                     match name with
@@ -365,6 +400,11 @@ module Numera =
                     | "cos" -> (rest, Math.Cos v)
                     | "tan" -> (rest, Math.Tan v)
                     | _ -> failwith "unreachable"
+                else if name = "exp" || name ="log" then
+                    let (rest, v) = evalFactor tail
+                    match name with
+                    | "exp" -> (rest, Math.Exp v)
+                    | "log" -> (rest, Math.Log10 v)
                 else
                     // variable lookup (return its numeric value and consume just the identifier)
                     if Map.containsKey name !symbolTable then

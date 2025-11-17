@@ -11,7 +11,7 @@
         "projectName": "CSharpApp",
         "projectPath": "C:\\Users\\sampy\\Source\\Repos\\fsharp-new-language\\CSharpApp\\CSharpApp.csproj",
         "packagesPath": "C:\\Users\\sampy\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\sampy\\source\\repos\\fsharp-new-language\\CSharpApp\\obj\\",
+        "outputPath": "C:\\Users\\sampy\\Source\\Repos\\fsharp-new-language\\CSharpApp\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\sampy\\AppData\\Roaming\\NuGet\\NuGet.Config",
