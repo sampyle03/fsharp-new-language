@@ -1,0 +1,293 @@
+{
+  "version": 3,
+  "targets": {
+    ".NETFramework,Version=v4.8": {
+      "FSharp.Core/4.7.2": {
+        "type": "package",
+        "compile": {
+          "lib/net45/FSharp.Core.dll": {
+            "related": ".optdata;.sigdata;.xml"
+          }
+        },
+        "runtime": {
+          "lib/net45/FSharp.Core.dll": {
+            "related": ".optdata;.sigdata;.xml"
+          }
+        },
+        "resource": {
+          "lib/net45/cs/FSharp.Core.resources.dll": {
+            "locale": "cs"
+          },
+          "lib/net45/de/FSharp.Core.resources.dll": {
+            "locale": "de"
+          },
+          "lib/net45/es/FSharp.Core.resources.dll": {
+            "locale": "es"
+          },
+          "lib/net45/fr/FSharp.Core.resources.dll": {
+            "locale": "fr"
+          },
+          "lib/net45/it/FSharp.Core.resources.dll": {
+            "locale": "it"
+          },
+          "lib/net45/ja/FSharp.Core.resources.dll": {
+            "locale": "ja"
+          },
+          "lib/net45/ko/FSharp.Core.resources.dll": {
+            "locale": "ko"
+          },
+          "lib/net45/pl/FSharp.Core.resources.dll": {
+            "locale": "pl"
+          },
+          "lib/net45/pt-BR/FSharp.Core.resources.dll": {
+            "locale": "pt-BR"
+          },
+          "lib/net45/ru/FSharp.Core.resources.dll": {
+            "locale": "ru"
+          },
+          "lib/net45/tr/FSharp.Core.resources.dll": {
+            "locale": "tr"
+          },
+          "lib/net45/zh-Hans/FSharp.Core.resources.dll": {
+            "locale": "zh-Hans"
+          },
+          "lib/net45/zh-Hant/FSharp.Core.resources.dll": {
+            "locale": "zh-Hant"
+          }
+        }
+      },
+      "FSharpLib/1.0.0": {
+        "type": "project",
+        "framework": ".NETFramework,Version=v4.8",
+        "dependencies": {
+          "FSharp.Core": "4.7.2"
+        },
+        "compile": {
+          "bin/placeholder/FSharpLib.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/FSharpLib.dll": {}
+        }
+      },
+      "Interop_F_Csharp_STUB/1.0.0": {
+        "type": "project",
+        "framework": ".NETFramework,Version=v4.8",
+        "dependencies": {
+          "FSharp.Core": "4.7.2"
+        },
+        "compile": {
+          "bin/placeholder/Interop_F_Csharp_STUB.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Interop_F_Csharp_STUB.dll": {}
+        }
+      }
+    },
+    ".NETFramework,Version=v4.8/win-x86": {
+      "FSharp.Core/4.7.2": {
+        "type": "package",
+        "compile": {
+          "lib/net45/FSharp.Core.dll": {
+            "related": ".optdata;.sigdata;.xml"
+          }
+        },
+        "runtime": {
+          "lib/net45/FSharp.Core.dll": {
+            "related": ".optdata;.sigdata;.xml"
+          }
+        },
+        "resource": {
+          "lib/net45/cs/FSharp.Core.resources.dll": {
+            "locale": "cs"
+          },
+          "lib/net45/de/FSharp.Core.resources.dll": {
+            "locale": "de"
+          },
+          "lib/net45/es/FSharp.Core.resources.dll": {
+            "locale": "es"
+          },
+          "lib/net45/fr/FSharp.Core.resources.dll": {
+            "locale": "fr"
+          },
+          "lib/net45/it/FSharp.Core.resources.dll": {
+            "locale": "it"
+          },
+          "lib/net45/ja/FSharp.Core.resources.dll": {
+            "locale": "ja"
+          },
+          "lib/net45/ko/FSharp.Core.resources.dll": {
+            "locale": "ko"
+          },
+          "lib/net45/pl/FSharp.Core.resources.dll": {
+            "locale": "pl"
+          },
+          "lib/net45/pt-BR/FSharp.Core.resources.dll": {
+            "locale": "pt-BR"
+          },
+          "lib/net45/ru/FSharp.Core.resources.dll": {
+            "locale": "ru"
+          },
+          "lib/net45/tr/FSharp.Core.resources.dll": {
+            "locale": "tr"
+          },
+          "lib/net45/zh-Hans/FSharp.Core.resources.dll": {
+            "locale": "zh-Hans"
+          },
+          "lib/net45/zh-Hant/FSharp.Core.resources.dll": {
+            "locale": "zh-Hant"
+          }
+        }
+      },
+      "FSharpLib/1.0.0": {
+        "type": "project",
+        "framework": ".NETFramework,Version=v4.8",
+        "dependencies": {
+          "FSharp.Core": "4.7.2"
+        },
+        "compile": {
+          "bin/placeholder/FSharpLib.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/FSharpLib.dll": {}
+        }
+      },
+      "Interop_F_Csharp_STUB/1.0.0": {
+        "type": "project",
+        "framework": ".NETFramework,Version=v4.8",
+        "dependencies": {
+          "FSharp.Core": "4.7.2"
+        },
+        "compile": {
+          "bin/placeholder/Interop_F_Csharp_STUB.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Interop_F_Csharp_STUB.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "FSharp.Core/4.7.2": {
+      "sha512": "w3XFVTnyZUbC8e2QT6a85ern6y7eQPPk+MYemz1FP0iBfgZcembL+wmo5cIZ1kxB8jfoXC8Q9KVkOMsGpkBKbA==",
+      "type": "package",
+      "path": "fsharp.core/4.7.2",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "Icon.png",
+        "fsharp.core.4.7.2.nupkg.sha512",
+        "fsharp.core.nuspec",
+        "lib/net45/FSharp.Core.dll",
+        "lib/net45/FSharp.Core.optdata",
+        "lib/net45/FSharp.Core.sigdata",
+        "lib/net45/FSharp.Core.xml",
+        "lib/net45/cs/FSharp.Core.resources.dll",
+        "lib/net45/de/FSharp.Core.resources.dll",
+        "lib/net45/es/FSharp.Core.resources.dll",
+        "lib/net45/fr/FSharp.Core.resources.dll",
+        "lib/net45/it/FSharp.Core.resources.dll",
+        "lib/net45/ja/FSharp.Core.resources.dll",
+        "lib/net45/ko/FSharp.Core.resources.dll",
+        "lib/net45/pl/FSharp.Core.resources.dll",
+        "lib/net45/pt-BR/FSharp.Core.resources.dll",
+        "lib/net45/ru/FSharp.Core.resources.dll",
+        "lib/net45/tr/FSharp.Core.resources.dll",
+        "lib/net45/zh-Hans/FSharp.Core.resources.dll",
+        "lib/net45/zh-Hant/FSharp.Core.resources.dll",
+        "lib/netstandard2.0/FSharp.Core.dll",
+        "lib/netstandard2.0/FSharp.Core.optdata",
+        "lib/netstandard2.0/FSharp.Core.sigdata",
+        "lib/netstandard2.0/FSharp.Core.xml",
+        "lib/netstandard2.0/cs/FSharp.Core.resources.dll",
+        "lib/netstandard2.0/de/FSharp.Core.resources.dll",
+        "lib/netstandard2.0/es/FSharp.Core.resources.dll",
+        "lib/netstandard2.0/fr/FSharp.Core.resources.dll",
+        "lib/netstandard2.0/it/FSharp.Core.resources.dll",
+        "lib/netstandard2.0/ja/FSharp.Core.resources.dll",
+        "lib/netstandard2.0/ko/FSharp.Core.resources.dll",
+        "lib/netstandard2.0/pl/FSharp.Core.resources.dll",
+        "lib/netstandard2.0/pt-BR/FSharp.Core.resources.dll",
+        "lib/netstandard2.0/ru/FSharp.Core.resources.dll",
+        "lib/netstandard2.0/tr/FSharp.Core.resources.dll",
+        "lib/netstandard2.0/zh-Hans/FSharp.Core.resources.dll",
+        "lib/netstandard2.0/zh-Hant/FSharp.Core.resources.dll"
+      ]
+    },
+    "FSharpLib/1.0.0": {
+      "type": "project",
+      "path": "../FSharpLib/FSharpLib.fsproj",
+      "msbuildProject": "../FSharpLib/FSharpLib.fsproj"
+    },
+    "Interop_F_Csharp_STUB/1.0.0": {
+      "type": "project",
+      "path": "../Interop_F_Csharp_STUB.fsproj",
+      "msbuildProject": "../Interop_F_Csharp_STUB.fsproj"
+    }
+  },
+  "projectFileDependencyGroups": {
+    ".NETFramework,Version=v4.8": [
+      "FSharpLib >= 1.0.0",
+      "Interop_F_Csharp_STUB >= 1.0.0"
+    ]
+  },
+  "packageFolders": {
+    "C:\\Users\\sampy\\.nuget\\packages\\": {}
+  },
+  "project": {
+    "version": "1.0.0",
+    "restore": {
+      "projectUniqueName": "C:\\Users\\sampy\\Source\\Repos\\fsharp-new-language\\CSharpApp\\CSharpApp.csproj",
+      "projectName": "CSharpApp",
+      "projectPath": "C:\\Users\\sampy\\Source\\Repos\\fsharp-new-language\\CSharpApp\\CSharpApp.csproj",
+      "packagesPath": "C:\\Users\\sampy\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\sampy\\source\\repos\\fsharp-new-language\\CSharpApp\\obj\\",
+      "projectStyle": "PackageReference",
+      "configFilePaths": [
+        "C:\\Users\\sampy\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+      ],
+      "originalTargetFrameworks": [
+        "net4.8"
+      ],
+      "sources": {
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+        "https://api.nuget.org/v3/index.json": {}
+      },
+      "frameworks": {
+        "net48": {
+          "targetAlias": "net4.8",
+          "projectReferences": {
+            "C:\\Users\\sampy\\Source\\Repos\\fsharp-new-language\\FSharpLib\\FSharpLib.fsproj": {
+              "projectPath": "C:\\Users\\sampy\\Source\\Repos\\fsharp-new-language\\FSharpLib\\FSharpLib.fsproj"
+            },
+            "C:\\Users\\sampy\\Source\\Repos\\fsharp-new-language\\Interop_F_Csharp_STUB.fsproj": {
+              "projectPath": "C:\\Users\\sampy\\Source\\Repos\\fsharp-new-language\\Interop_F_Csharp_STUB.fsproj"
+            }
+          }
+        }
+      },
+      "warningProperties": {
+        "warnAsError": [
+          "NU1605"
+        ]
+      },
+      "restoreAuditProperties": {
+        "enableAudit": "true",
+        "auditLevel": "low",
+        "auditMode": "direct"
+      },
+      "SdkAnalysisLevel": "9.0.300"
+    },
+    "frameworks": {
+      "net48": {
+        "targetAlias": "net4.8",
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305\\RuntimeIdentifierGraph.json"
+      }
+    },
+    "runtimes": {
+      "win-x86": {
+        "#import": []
+      }
+    }
+  }
+}

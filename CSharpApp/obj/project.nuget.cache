@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "FjlRI4WvgXM=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\sampy\\Source\\Repos\\fsharp-new-language\\CSharpApp\\CSharpApp.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\sampy\\.nuget\\packages\\fsharp.core\\4.7.2\\fsharp.core.4.7.2.nupkg.sha512"
+  ],
+  "logs": []
+}
