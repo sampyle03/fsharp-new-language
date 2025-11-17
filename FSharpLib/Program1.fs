@@ -421,25 +421,90 @@ module Numera =
             | _ -> raise parseError
         evalStatement tokenList
 
-    let rec printTokenList (lst:list<terminal>) : list<string> = 
-        match lst with
-        head::tail -> Console.Write("{0} ",head.ToString())
-                      printTokenList tail
+    // Uncomment this if you still want to run as console app (then comment out everything underneath
+    //let rec printTokenList (lst:list<terminal>) : list<string> = 
+    //    match lst with
+    //    head::tail -> Console.Write("{0} ",head.ToString())
+    //                  printTokenList tail
                   
-        | [] -> Console.Write("EOL\n")
-                []
+    //    | [] -> Console.Write("EOL\n")
 
-    let rec repeat() =
-        let input = readInputString()
-        if input.ToLower() = "exit" then
-            Console.WriteLine("Exiting interpreter.")
-        else
-            let tokens = lexer input
-            let (_, result) = parseAndEval tokens 
-            Console.WriteLine("Result = {0}", result)
-            repeat()
+    //let rec repeat() =
+    //    let input = readInputString()
+    //    if input.ToLower() = "exit" then
+    //        Console.WriteLine("Exiting interpreter.")
+    //    else
+    //        let tokens = lexer input
+    //        let (_, result) = parseAndEval tokens 
+    //        Console.WriteLine("Result = {0}", result)
+    //        repeat()
 
-    let main argv  =
-        Console.WriteLine("Simple Interpreter - Enter Code (type 'exit' to quit)")
-        repeat()
-        0
+    //let main argv  =
+    //    Console.WriteLine("Simple Interpreter - Enter Code (type 'exit' to quit)")
+    //    repeat()
+    //    0
+
+namespace FSharpLib
+
+module Interpreter =
+    open System
+    open FSharpLib.Numera
+
+    // Convert ValType to a friendly string
+    let private valTypeToString (t: ValType) =
+        match t with
+        | IntType   -> "int"
+        | FloatType -> "float"
+        | BoolType  -> "bool"
+        | StringType -> "string"
+
+    // Convert Val to a friendly string
+    let private valToString (v: Val) =
+        match v with
+        | ValInt i    -> string i
+        | ValFloat f  -> string f
+        | ValBool b   -> string b
+        | ValString s -> "\"" + s + "\""
+
+    /// Return all current variables as a multi-line string.
+    /// Each line:  name : type = value
+    let GetVariables () : string =
+        !symbolTable               // dereference the ref
+        |> Map.toList
+        |> List.map (fun (name, symbol) ->
+            let valueStr =
+                match symbol.value with
+                | None      -> "<uninitialised>"
+                | Some v    -> valToString v
+            sprintf "%s : %s = %s" name (valTypeToString symbol.valType) valueStr
+        )
+        |> String.concat Environment.NewLine
+
+    /// Evaluate one or more statements and return the result of the last one
+    /// This is what the GUI calls     
+    let Evaluate (source:string) : string =
+        try
+            let tokens = lexer source
+
+            // Evaluate all statements in sequence, using the shared symbolTable
+            let rec evalAll tokens lastValue =
+                match tokens with
+                | [] -> lastValue
+                | _ ->
+                    let (rest, value) = parseAndEval tokens
+
+                    // If the parser didn't consume anything, avoid infinite loop
+                    if rest = tokens then
+                        value
+                    else
+                        evalAll rest value
+
+            match tokens with
+            | [] ->
+                // Empty input -> no result
+                ""
+            | _ ->
+                let finalVal = evalAll tokens 0.0
+                finalVal.ToString()
+        with ex ->
+            "Error: " + ex.Message
