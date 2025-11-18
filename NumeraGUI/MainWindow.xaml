@@ -1,292 +1,75 @@
-﻿<Window x:Class="NumeraGUI.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Numera" Height="800" Width="1200">
-    <DockPanel>
-        <!-- Navigation Bar -->
-        <Grid DockPanel.Dock="Top" Background="#6CB4EE" Height="65">
-            <TextBlock Text="Numera"
-                       FontSize="30"
-                       FontWeight="Bold"
-                       FontFamily="Courier New"
-                       VerticalAlignment="Center"
-                       HorizontalAlignment="Center"/>
+using System;
+using System.Windows;
 
-            <Button x:Name="PlottingButton"
-                    Content="Plotting"
-                    FontFamily="Courier New"
-                    FontWeight="SemiBold"
-                    FontSize="16"
-                    Width="100"
-                    Height="32"
-                    Margin="40,4,110,4"
-                    VerticalAlignment="Center"
-                    HorizontalAlignment="Left"
-                    Click="PlottingButton_Click"/>
+namespace NumeraGUI
+{
+    public partial class MainWindow : Window
+    {
+        public MainWindow()
+        {
+            InitializeComponent();
+            RefreshVariables();
+        }
 
-            <Button x:Name="HelpButton"
-                    Width="32" Height="32"
-                    Margin="0,4,40,4"
-                    VerticalAlignment="Center"
-                    HorizontalAlignment="Right"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    Padding="0"
-                    Click="HelpButton_Click"
-                    ToolTip="Click for help"
-                    ToolTipService.InitialShowDelay="200">
-                <Grid Width="32" Height="32">
-                    <Ellipse Width="32" Height="32"
-                             Stroke="Black"
-                             StrokeThickness="3"
-                             Fill="Transparent"/>
-                    <TextBlock Text="?"
-                               FontSize="20"
-                               FontWeight="Bold"
-                               Foreground="Black"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center"/>
-                </Grid>
-            </Button>
-        </Grid>
+        private void RunButton_Click(object sender, RoutedEventArgs e)
+        {
+            var input = InputBox.Text;
 
-        <!-- Main Content -->
-        <Grid Margin="60,30,60,40"
-              HorizontalAlignment="Center"
-              VerticalAlignment="Center">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="100"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="100"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
+            try
+            {
+                // Evaluate using F#
+                var result = FSharpLib.Interpreter.Evaluate(input);
 
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <!-- top row -->
-                <RowDefinition Height="Auto"/>
-                <!-- errors row -->
-            </Grid.RowDefinitions>
+                if (result.StartsWith("Error:"))
+                {
+                    // Send error text to the error box ONLY
+                    ErrorBox.Text = result;
+                    OutputBox.Text = string.Empty; // clear successful output
+                }
+                else
+                {
+                    // Successful result → show in OutputBox
+                    OutputBox.Text = result;
+                    ErrorBox.Text = string.Empty; // clear old errors
+                }
+            }
+            catch (Exception ex)
+            {
+                // Hard exceptions (rare) still go to ErrorBox
+                ErrorBox.Text = "Error: " + ex.Message;
+                OutputBox.Text = string.Empty;
+            }
 
-            <!-- ========== LEFT PANEL: INPUT ========== -->
-            <StackPanel Grid.Column="0" Grid.Row="0"
-                        VerticalAlignment="Top"
-                        HorizontalAlignment="Center"
-                        Margin="10,10,10,0">
-                <TextBlock Text="Enter expression:"
-                           FontFamily="Courier New"
-                           FontSize="16"
-                           FontWeight="SemiBold"
-                           Margin="0,0,0,5"
-                           HorizontalAlignment="Left"/>
+            RefreshVariables();
+        }
 
-                <!-- Input area with > prompt -->
-                <Border Width="260" Height="230"
-                        Background="#FFEFEFEF"
-                        BorderBrush="Black"
-                        BorderThickness="1.5">
-                    <Grid>
-                        <!-- Prompt symbol -->
-                        <TextBlock Text=">"
-                                   FontSize="18"
-                                   FontFamily="Courier New"
-                                   VerticalAlignment="Top"
-                                   HorizontalAlignment="Left"
-                                   Margin="6,6,0,0"/>
+        private void ClearButton_Click(object sender, RoutedEventArgs e)
+        {
+            InputBox.Clear();
+            OutputBox.Clear();
+            ErrorBox.Clear();
+        }
 
-                        <!-- Actual input textbox -->
-                        <TextBox x:Name="InputBox"
-                                 Margin="20,0,0,0"
-                                 FontSize="18"
-                                 FontFamily="Courier New"
-                                 BorderThickness="0"
-                                 Background="Transparent"
-                                 VerticalContentAlignment="Top"
-                                 TextAlignment="Left"
-                                 Padding="0,6,6,6"
-                                 AcceptsReturn="True"/>
-                    </Grid>
-                </Border>
+        private void HelpButton_Click(object sender, RoutedEventArgs e)
+        {
+            var helpWindow = new HelpWindow
+            {
+                Owner = this
+            };
+            helpWindow.ShowDialog();
+        }
 
-                <!-- Buttons Row -->
-                <Grid Width="260" Margin="0,15,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-
-                    <!-- Run Button -->
-                    <Button x:Name="RunButton"
-                            Grid.Column="0"
-                            Width="110"
-                            Height="40"
-                            Margin="0,0,20,0"
-                            Padding="8,4"
-                            Click="RunButton_Click"
-                            HorizontalContentAlignment="Center"
-                            VerticalContentAlignment="Center">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <Viewbox Width="18" Height="18" VerticalAlignment="Center">
-                                <Canvas Width="16" Height="16">
-                                    <Path Data="M2,2 L14,8 L2,14 Z" Fill="Green"/>
-                                </Canvas>
-                            </Viewbox>
-                            <TextBlock Text="Run"
-                                       Margin="6,0,0,0"
-                                       FontSize="14"
-                                       FontFamily="Courier New"
-                                       FontWeight="SemiBold"
-                                       VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-
-                    <!-- Clear Button -->
-                    <Button x:Name="ClearButton"
-                            Grid.Column="2"
-                            Width="110"
-                            Height="40"
-                            Padding="8,4"
-                            Click="ClearButton_Click"
-                            HorizontalContentAlignment="Center"
-                            VerticalContentAlignment="Center">
-                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <Viewbox Width="18" Height="18" VerticalAlignment="Center">
-                                <Canvas Width="16" Height="16">
-                                    <!-- Bin lid -->
-                                    <Rectangle Width="10" Height="1.8" Canvas.Left="3" Canvas.Top="3" Fill="Red"/>
-                                    <!-- Bin body -->
-                                    <Rectangle Width="8" Height="9" Canvas.Left="4" Canvas.Top="4.8"
-                                               Stroke="Red" StrokeThickness="1.5" Fill="Transparent"/>
-                                    <!-- Bin lines -->
-                                    <Line X1="6" Y1="5.8" X2="6" Y2="13" Stroke="Red" StrokeThickness="1"/>
-                                    <Line X1="8" Y1="5.8" X2="8" Y2="13" Stroke="Red" StrokeThickness="1"/>
-                                    <Line X1="10" Y1="5.8" X2="10" Y2="13" Stroke="Red" StrokeThickness="1"/>
-                                    <!-- Handle -->
-                                    <Rectangle Width="4" Height="1" Canvas.Left="6" Canvas.Top="2" Fill="Red"/>
-                                </Canvas>
-                            </Viewbox>
-                            <TextBlock Text="Clear"
-                                       Margin="6,0,0,0"
-                                       FontSize="14"
-                                       FontFamily="Courier New"
-                                       FontWeight="SemiBold"
-                                       VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-                </Grid>
-            </StackPanel>
-
-            <!-- ========== MIDDLE PANEL: OUTPUT ========== -->
-            <StackPanel Grid.Column="2" Grid.Row="0"
-                        VerticalAlignment="Top"
-                        HorizontalAlignment="Center"
-                        Margin="10,10,10,0">
-                <TextBlock Text="Output:"
-                           FontSize="16"
-                           FontFamily="Courier New"
-                           FontWeight="SemiBold"
-                           Margin="0,0,0,5"
-                           HorizontalAlignment="Left"/>
-
-                <!-- Output area with > prompt -->
-                <Border Width="260" Height="230"
-                        Background="#FFEFEFEF"
-                        BorderBrush="Black"
-                        BorderThickness="1.5">
-                    <Grid>
-                        <!-- Prompt symbol -->
-                        <TextBlock Text=">"
-                                   FontSize="18"
-                                   FontFamily="Courier New"
-                                   VerticalAlignment="Top"
-                                   HorizontalAlignment="Left"
-                                   Margin="6,6,0,0"/>
-
-                        <!-- Actual output textbox -->
-                        <TextBox x:Name="OutputBox"
-                                 Margin="20,0,0,0"
-                                 FontSize="18"
-                                 FontFamily="Courier New"
-                                 BorderThickness="0"
-                                 Background="Transparent"
-                                 VerticalContentAlignment="Top"
-                                 TextAlignment="Left"
-                                 Padding="0,6,6,6"
-                                 IsReadOnly="True"/>
-                    </Grid>
-                </Border>
-            </StackPanel>
-
-            <!-- ========== RIGHT PANEL: CURRENT VARIABLES ========== -->
-            <StackPanel Grid.Column="4" Grid.Row="0"
-                        VerticalAlignment="Top"
-                        HorizontalAlignment="Center"
-                        Margin="10,10,10,0">
-                <TextBlock Text="Current Variables:"
-                           FontSize="16"
-                           FontFamily="Courier New"
-                           FontWeight="SemiBold"
-                           Margin="0,0,0,5"
-                           HorizontalAlignment="Left"/>
-                <TextBox x:Name="VariablesBox"
-                         Width="260" Height="230"
-                         FontSize="18"
-                         FontFamily="Courier New"
-                         TextWrapping="Wrap"
-                         VerticalScrollBarVisibility="Auto"
-                         IsReadOnly="True"
-                         Background="#FFEFEFEF"
-                         BorderBrush="Black"
-                         BorderThickness="1.5"
-                         TextAlignment="Left"
-                         VerticalContentAlignment="Top"
-                         Padding="6"/>
-            </StackPanel>
-
-            <!-- ========== BOTTOM ROW: ERRORS ========== -->
-            <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="5"
-                        Margin="10,40,10,0"
-                        HorizontalAlignment="Stretch">
-                <TextBlock Text="Errors:"
-                           FontSize="16"
-                           FontFamily="Courier New"
-                           FontWeight="SemiBold"
-                           Margin="0,0,0,5"
-                           HorizontalAlignment="Left"/>
-
-                <!-- Error area with > prefix -->
-                <Border Height="80"
-                        Background="#FFF5EAEA"
-                        BorderBrush="Red"
-                        BorderThickness="1.5">
-                    <Grid>
-                        <!-- Prompt symbol -->
-                        <TextBlock Text=">"
-                                   FontSize="14"
-                                   FontFamily="Courier New"
-                                   VerticalAlignment="Top"
-                                   HorizontalAlignment="Left"
-                                   Margin="6,6,0,0"/>
-
-                        <!-- Actual error textbox -->
-                        <TextBox x:Name="ErrorBox"
-                                 Margin="20,0,0,0"
-                                 FontSize="18"
-                                 FontFamily="Courier New"
-                                 TextWrapping="Wrap"
-                                 VerticalScrollBarVisibility="Auto"
-                                 IsReadOnly="True"
-                                 Background="Transparent"
-                                 BorderThickness="0"
-                                 TextAlignment="Left"
-                                 VerticalContentAlignment="Top"
-                                 Padding="0,6,6,6"
-                                 HorizontalAlignment="Stretch"/>
-                    </Grid>
-                </Border>
-            </StackPanel>
-        </Grid>
-    </DockPanel>
-</Window>
+        private void RefreshVariables()
+        {
+            try
+            {
+                var variablesText = FSharpLib.Interpreter.GetVariables();
+                VariablesBox.Text = variablesText;
+            }
+            catch
+            {
+                // Fail silently – no crash for variable display issues
+            }
+        }
+    }
+}
