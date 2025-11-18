@@ -1,4 +1,3 @@
-﻿using NumeraGUI;
 using System;
 using System.Windows;
 
@@ -71,19 +70,6 @@ namespace NumeraGUI
             {
                 // Fail silently – no crash for variable display issues
             }
-        }
-
-        private void PlottingButton_Click(object sender, RoutedEventArgs e)
-        {
-            var plotWindow = new PlotWindow
-            {
-                Owner = this
-            };
-
-            // Optional test so you can see something when it opens:
-            plotWindow.PlotLine(1.0, 0.0, -10, 10);
-
-            plotWindow.Show();
         }
     }
 }
