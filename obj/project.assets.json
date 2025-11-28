@@ -112,19 +112,24 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\sampy\\.nuget\\packages\\": {}
+    "C:\\Users\\liblo\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\sampy\\source\\repos\\fsharp-new-language\\Interop_F_Csharp_STUB.fsproj",
+      "projectUniqueName": "C:\\Users\\liblo\\OneDrive - University of East Anglia\\Masters\\adv prog\\CW 001\\git-folder\\Interop_F_Csharp_STUB.fsproj",
       "projectName": "Interop_F_Csharp_STUB",
-      "projectPath": "C:\\Users\\sampy\\source\\repos\\fsharp-new-language\\Interop_F_Csharp_STUB.fsproj",
-      "packagesPath": "C:\\Users\\sampy\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\sampy\\source\\repos\\fsharp-new-language\\obj\\",
+      "projectPath": "C:\\Users\\liblo\\OneDrive - University of East Anglia\\Masters\\adv prog\\CW 001\\git-folder\\Interop_F_Csharp_STUB.fsproj",
+      "packagesPath": "C:\\Users\\liblo\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\liblo\\OneDrive - University of East Anglia\\Masters\\adv prog\\CW 001\\git-folder\\obj\\",
       "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+      ],
       "configFilePaths": [
-        "C:\\Users\\sampy\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\liblo\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
@@ -132,7 +137,7 @@
       ],
       "sources": {
         "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-        "C:\\Program Files\\dotnet\\sdk\\9.0.305\\FSharp\\library-packs": {},
+        "C:\\Program Files\\dotnet\\sdk\\9.0.308\\FSharp\\library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -159,7 +164,7 @@
             "generatePathProperty": true
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.308\\RuntimeIdentifierGraph.json"
       }
     }
   }

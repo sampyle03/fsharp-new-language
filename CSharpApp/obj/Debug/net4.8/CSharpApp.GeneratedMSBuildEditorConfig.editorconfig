@@ -1,6 +1,6 @@
 is_global = true
 build_property.RootNamespace = CSharpApp
-build_property.ProjectDir = C:\Users\sampy\Source\Repos\fsharp-new-language\CSharpApp\
+build_property.ProjectDir = C:\Users\liblo\OneDrive - University of East Anglia\Masters\adv prog\CW 001\git-folder\CSharpApp\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.CsWinRTUseWindowsUIXamlProjections = false
