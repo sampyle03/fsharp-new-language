@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<doc>
+<assembly><name>FSharpLib</name></assembly>
+<members>
+<member name="M:FSharpLib.Interpreter.Evaluate(System.String)">
+<summary>
+ Evaluate one or more statements and return the result of the last one
+ This is what the GUI calls     
+</summary>
+</member>
+<member name="M:FSharpLib.Interpreter.GetVariables">
+<summary>
+ Return all current variables as a multi-line string.
+ Each line:  name : type = value
+</summary>
+</member>
+</members>
+</doc>
