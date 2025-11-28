@@ -7,8 +7,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSharpApp", "CSharpApp\CSha
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FSharpLib", "FSharpLib\FSharpLib.fsproj", "{6EC15463-F40B-479F-A67C-A056A9FB5F82}"
 EndProject
-Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "NumeraGUI", "NumeraGUI\NumeraGUI.vbproj", "{35936D2A-99E2-4F74-99A3-B0A93B492708}"
-EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Interop_F_Csharp_STUB", "Interop_F_Csharp_STUB.fsproj", "{364644CE-5FE6-B145-D2C1-4E6C942720C3}"
 EndProject
 Global
