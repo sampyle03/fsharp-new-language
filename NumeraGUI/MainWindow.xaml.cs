@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Windows;
 
 namespace NumeraGUI
@@ -17,30 +17,31 @@ namespace NumeraGUI
 
             try
             {
-                // Evaluate using F#
+                // Evaluate using F# interpreter
                 var result = FSharpLib.Interpreter.Evaluate(input);
 
-                if (result.StartsWith("Error:"))
+                if (!string.IsNullOrEmpty(result) &&
+                    result.StartsWith("Error:", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Send error text to the error box ONLY
+                    // Show errors only in ErrorBox
                     ErrorBox.Text = result;
-                    OutputBox.Text = string.Empty; // clear successful output
+                    OutputBox.Text = string.Empty;
                 }
                 else
                 {
-                    // Successful result → show in OutputBox
+                    // Show successful result only in OutputBox
+                    ErrorBox.Text = string.Empty;
                     OutputBox.Text = result;
-                    ErrorBox.Text = string.Empty; // clear old errors
                 }
+
+                // Update variables panel
+                RefreshVariables();
             }
             catch (Exception ex)
             {
-                // Hard exceptions (rare) still go to ErrorBox
+                // Hard errors go to ErrorBox
                 ErrorBox.Text = "Error: " + ex.Message;
-                OutputBox.Text = string.Empty;
             }
-
-            RefreshVariables();
         }
 
         private void ClearButton_Click(object sender, RoutedEventArgs e)
@@ -59,6 +60,16 @@ namespace NumeraGUI
             helpWindow.ShowDialog();
         }
 
+        // This just opens the plotting window; no plotting logic
+        private void PlottingButton_Click(object sender, RoutedEventArgs e)
+        {
+            var plotWindow = new PlotWindow
+            {
+                Owner = this
+            };
+            plotWindow.Show();
+        }
+
         private void RefreshVariables()
         {
             try
@@ -68,7 +79,7 @@ namespace NumeraGUI
             }
             catch
             {
-                // Fail silently – no crash for variable display issues
+                // Ignore variable refresh issues so the app doesn't crash
             }
         }
     }
