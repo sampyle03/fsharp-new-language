@@ -411,10 +411,106 @@ module Numera =
 
 
     let parseAndEval tokenList = 
-        let floatRem (a:float) (b:float) = a - (floor (a / b) * b)
+        let pushTempBinding (name:string) (v:Val) =
+            let old = Map.tryFind name !symbolTable
+            let t = match v with | ValInt _ -> IntType | ValFloat _ -> FloatType | ValBool _ -> BoolType | ValString _ -> StringType
+            symbolTable := Map.add name { valType = t; value = Some v } !symbolTable
+            old
 
-        let rec evalStatement tokens =
+        let popRestoreBinding (name:string) (oldOpt: Symbol option) =
+            match oldOpt with
+            | None -> symbolTable := Map.remove name !symbolTable
+            | Some s -> symbolTable := Map.add name s !symbolTable
+
+        let valToString (v:Val) =
+            match v with
+            | ValInt i -> sprintf "%d" i
+            | ValFloat f -> sprintf "%g" f
+            | ValBool b -> if b then "true" else "false"
+            | ValString s -> s
+
+        let formatPairs (pairs:(Val * Val) list) =
+            let elems = pairs |> List.map (fun (x,y) -> sprintf "(%s,%s)" (valToString x) (valToString y))
+            "[" + (String.Join(",", elems)) + "]"
+
+        // split graph tokens into equation and graph range
+        let splitGraphTokens (tokens: terminal list)
+            : (terminal list * float * float * terminal list) =
+
+            let rec loop accumulatedTokens bracketDepth remainingTokens =
+                match remainingTokens with
+                | [] ->
+                    (List.rev accumulatedTokens, 10.0, 10.0, [])
+
+                | Semicolon :: tail ->
+                    (List.rev accumulatedTokens, 10.0, 10.0, Semicolon :: tail)
+
+                | Comma :: Lpar :: xToken :: Comma :: yToken :: Rpar :: tail
+                  when bracketDepth = 0 ->
+                    let parseNumber token =
+                        match token with
+                        | NumInt n -> float n
+                        | NumFloat f -> f
+                        | _ -> raise (System.Exception("Expected numeric literal in graph range"))
+
+                    let xRange = parseNumber xToken
+                    let yRange = parseNumber yToken
+
+                    (List.rev accumulatedTokens, xRange, yRange, tail)
+
+                | headToken :: tailTokens ->
+                    let newBracketDepth =
+                        match headToken with
+                        | Lpar -> bracketDepth + 1
+                        | Rpar -> bracketDepth - 1
+                        | _ -> bracketDepth
+
+                    loop (headToken :: accumulatedTokens) newBracketDepth tailTokens
+
+            loop [] 0 tokens
+
+
+        // evaluates graph
+        let rec varGraphRHS (exprTokens:terminal list) (xMax:float) (yMax:float) : (Val * Val) list =
+            let numOfPoints = 100
+            let rec sample i acc =
+                if i >= numOfPoints then List.rev acc
+                else
+                    let computedX = -xMax + float (i + 1) * (2.0 * xMax) / float (numOfPoints + 1)
+                    let xValSymb =
+                        let j = int computedX
+                        if float j = computedX then ValInt j else ValFloat computedX
+
+                    // push temporary x variable binding
+                    let previousVal = pushTempBinding "x" xValSymb
+                    try
+                        try
+                            let (remaining, yVal) = evalExpressionVal exprTokens
+                            // range checking
+                            let yValFloat = valToFloat yVal
+                            if yValFloat > -yMax && yValFloat < yMax then
+                                sample (i + 1) ((xValSymb, yVal) :: acc)
+                            else
+                                sample (i + 1) acc
+                        with ex ->
+                            Console.WriteLine("Skipping x={0}: {1}", computedX, ex.Message)
+                            sample (i + 1) acc
+                    finally
+                        // restore previous x variable binding
+                        popRestoreBinding "x" previousVal
+            sample 0 []
+
+        and evalStatement tokens =
             match tokens with
+            | Graph :: Identifier name :: Equals :: tail ->
+                let (exprTokens, xMax, yMax, remainder) = splitGraphTokens tail
+                let restAfter =
+                    match remainder with
+                    | Semicolon :: rest -> rest
+                    | _ -> remainder
+                let pairs = varGraphRHS exprTokens xMax yMax
+                Console.WriteLine("{0}", formatPairs pairs)
+                (restAfter, 0.0)
             | Let :: TypeInt :: Identifier name :: Equals :: tail
             | Let :: TypeFloat :: Identifier name :: Equals :: tail
             | Let :: TypeBool :: Identifier name :: Equals :: tail ->
