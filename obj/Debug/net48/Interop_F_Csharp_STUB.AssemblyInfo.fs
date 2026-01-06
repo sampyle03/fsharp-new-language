@@ -10,7 +10,7 @@ open System.Reflection
 [<assembly: System.Reflection.AssemblyCompanyAttribute("Interop_F_Csharp_STUB")>]
 [<assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")>]
 [<assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")>]
-[<assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1490ca022f608763dc920cdbcf875495f6d01f20")>]
+[<assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b5133dfac7b69425fb42a7e31ec5b3dc857a20ff")>]
 [<assembly: System.Reflection.AssemblyProductAttribute("Interop_F_Csharp_STUB")>]
 [<assembly: System.Reflection.AssemblyTitleAttribute("Interop_F_Csharp_STUB")>]
 [<assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")>]
