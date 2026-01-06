@@ -411,17 +411,19 @@ module Numera =
 
 
     let parseAndEval tokenList = 
+        // Converts a list of (x, y) coordinate pairs into a strin.
         let pushTempBinding (name:string) (v:Val) =
             let old = Map.tryFind name !symbolTable
-            let t = match v with | ValInt _ -> IntType | ValFloat _ -> FloatType | ValBool _ -> BoolType | ValString _ -> StringType
-            symbolTable := Map.add name { valType = t; value = Some v } !symbolTable
+            let t = match v  with | ValInt _ -> IntType | ValFloat _ -> FloatType | ValBool _ -> BoolType | ValString _ -> StringType
+            symbolTable := Map.add name {valType = t;value = Some v } !symbolTable
             old
 
-        let popRestoreBinding (name:string) (oldOpt: Symbol option) =
-            match oldOpt with
+        let popRestoreBinding (name:string) (oldOption:Symbol option) =
+            match oldOption with
             | None -> symbolTable := Map.remove name !symbolTable
             | Some s -> symbolTable := Map.add name s !symbolTable
 
+        // Converts a value into a human-readable string.
         let valToString (v:Val) =
             match v with
             | ValInt i -> sprintf "%d" i
@@ -641,198 +643,25 @@ module Numera =
         evalStatement tokenList
 
 
-    //let rec printTokenList (lst:list<terminal>) : list<string> = 
-    //    match lst with
-    //    head::tail -> Console.Write("{0} ",head.ToString())
-    //                  printTokenList tail
+    let rec printTokenList (lst:list<terminal>) : list<string> = 
+        match lst with
+        head::tail -> Console.Write("{0} ",head.ToString())
+                      printTokenList tail
                   
-    //    | [] -> Console.Write("EOL\n")
-    //            []
+        | [] -> Console.Write("EOL\n")
+                []
 
-    //let rec repeat() =
-    //    let input = readInputString()
-    //    if input.ToLower() = "exit" then
-    //        Console.WriteLine("Exiting interpreter.")
-    //    else
-    //        let tokens = lexer input
-    //        let (_, result) = parseAndEval tokens 
-    //        Console.WriteLine("Result = {0}", result)
-    //        repeat()
+    let rec repeat() =
+        let input = readInputString()
+        if input.ToLower() = "exit" then
+            Console.WriteLine("Exiting interpreter.")
+        else
+            let tokens = lexer input
+            let (_, result) = parseAndEval tokens 
+            Console.WriteLine("Result = {0}", result)
+            repeat()
 
-    //let main argv  =
-    //    Console.WriteLine("Simple Interpreter - Enter Code (type 'exit' to quit)")
-    //    repeat()
-    //    0
-
-namespace FSharpLib
-
-module Interpreter =
-    open System
-    open FSharpLib.Numera
-
-    // Convert ValType to a friendly string
-    let private valTypeToString (t: ValType) =
-        match t with
-        | IntType   -> "int"
-        | FloatType -> "float"
-        | BoolType  -> "bool"
-        | StringType -> "string"
-
-    // Convert Val to a friendly string
-    let private valToString (v: Val) =
-        match v with
-        | ValInt i    -> string i
-        | ValFloat f  -> string f
-        | ValBool b   -> string b
-        | ValString s -> "\"" + s + "\""
-
-    /// Return all current variables as a multi-line string.
-    /// Each line:  name : type = value
-    let GetVariables () : string =
-        !symbolTable               // dereference the ref
-        |> Map.toList
-        |> List.map (fun (name, symbol) ->
-            let valueStr =
-                match symbol.value with
-                | None      -> "<uninitialised>"
-                | Some v    -> valToString v
-            sprintf "%s : %s = %s" name (valTypeToString symbol.valType) valueStr
-        )
-        |> String.concat Environment.NewLine
-
-    /// Evaluate one or more statements and return the result of the last one
-    /// This is what the GUI calls     
-    let Evaluate (source:string) : string =
-        try
-            let tokens = lexer source
-
-            // Evaluate all statements in sequence, using the shared symbolTable
-            let rec evalAll tokens lastValue =
-                match tokens with
-                | [] -> lastValue
-                | _ ->
-                    let (rest, value) = parseAndEval tokens
-
-                    // If the parser didn't consume anything, avoid infinite loop
-                    if rest = tokens then
-                        value
-                    else
-                        evalAll rest value
-
-            match tokens with
-            | [] ->
-                // Empty input -> no result
-                ""
-            | _ ->
-                let finalVal = evalAll tokens 0.0
-                finalVal.ToString()
-        with ex ->
-            "Error: " + ex.Message
-
-
-    /// ----------------------------------------------------------------
-    /// Plotting support for WPF
-    /// ----------------------------------------------------------------
-
-    /// Parse a graph command like:
-    ///   graph x = x^2, (-10, 10);
-    /// into (variable name, expression string, xmin, xmax)
-    let private parseGraphCommand (input : string) =
-        let trimmed =
-            input.Trim()
-                 .TrimEnd(';')
-
-        if not (trimmed.StartsWith("graph", StringComparison.OrdinalIgnoreCase)) then
-            failwith "Plot command must start with 'graph'. Example: graph x = x^2, (-10, 10);"
-
-        // Drop the 'graph' keyword
-        let afterGraph = trimmed.Substring("graph".Length).Trim()    // e.g. "x = x^2, (-10, 10)"
-
-        // Split at the first comma: left is "x = x^2", right is "(-10, 10)"
-        let commaIndex = afterGraph.IndexOf(',')
-        if commaIndex < 0 then
-            failwith "Graph command must include a range, e.g. graph x = x^2, (-10, 10);"
-
-        let exprPart  = afterGraph.Substring(0, commaIndex).Trim()   // "x = x^2"
-        let rangePart = afterGraph.Substring(commaIndex + 1).Trim()  // "(-10, 10)"
-
-        // Extract variable name and expression from "x = x^2"
-        let eqIndex = exprPart.IndexOf('=')
-        if eqIndex < 0 then
-            failwith "Graph command must be of the form: graph x = expression, (min, max);"
-
-        let varName    = exprPart.Substring(0, eqIndex).Trim()       // "x"
-        let exprString = exprPart.Substring(eqIndex + 1).Trim()      // "x^2"
-
-        if String.IsNullOrWhiteSpace(varName) then
-            failwith "Graph command must specify a variable name, e.g. graph x = x^2, (-10, 10);"
-
-        // Parse range "(min, max)"
-        if not (rangePart.StartsWith("(") && rangePart.EndsWith(")")) then
-            failwith "Range must be in the form (min, max), e.g. (-10, 10)."
-
-        let rangeClean =
-            rangePart.TrimStart('(')
-                     .TrimEnd(')')
-                     .Trim()                                         // "-10, 10"
-
-        let parts =
-            rangeClean.Split([|','|], StringSplitOptions.RemoveEmptyEntries)
-
-        if parts.Length <> 2 then
-            failwith "Range must contain exactly two values: (min, max)."
-
-        let parseDouble (s : string) =
-            System.Double.Parse(
-                s.Trim(),
-                Globalization.CultureInfo.InvariantCulture
-            )
-
-        let xmin = parseDouble parts.[0]
-        let xmax = parseDouble parts.[1]
-
-        if xmin >= xmax then
-            failwith "Range must satisfy min < max."
-
-        varName, exprString, xmin, xmax
-
-
-    /// Evaluate an expression string with a particular variable bound to x.
-    /// This uses existing lexer + parseAndEval + symbolTable.
-    let private evalExpressionWithVar (varName : string) (exprString : string) (x : float) : float =
-        // Save current symbol table so we can restore it afterwards
-        let oldTable = !symbolTable
-
-        try
-            // Add or override the variable in the symbol table
-            let symbol =
-                { valType = FloatType
-                  value   = Some (ValFloat x) }
-
-            symbolTable := Map.add varName symbol !symbolTable
-
-            // Tokenise and evaluate the expression using the existing parser
-            let tokens = lexer exprString
-            let (_, result) = parseAndEval tokens   // result : float
-
-            result
-        finally
-            // Restore previous symbol table 
-            symbolTable := oldTable
-
-
-    /// Public function for the WPF plot window.
-    /// Expects the full 'graph' command as typed in the GUI, e.g.:
-    ///   graph x = x^2, (-10, 10);
-    /// Returns a list of (x, y) points sampling the function over [xmin, xmax].
-    let GetPointsForExpression (input : string) : (float * float) list =
-        let varName, exprString, xmin, xmax = parseGraphCommand input
-
-        // Number of samples between xmin and xmax
-        let steps = 200
-        let step  = (xmax - xmin) / float steps
-
-        [ for i in 0 .. steps ->
-            let x = xmin + float i * step
-            let y = evalExpressionWithVar varName exprString x
-            (x, y) ]
+    let main argv  =
+        Console.WriteLine("Simple Interpreter - Enter Code (type 'exit' to quit)")
+        repeat()
+        0
