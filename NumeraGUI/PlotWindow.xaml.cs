@@ -1,4 +1,4 @@
-﻿/*
+/*
 * PlotWindow.xaml.cs
 * ------------------
 * This file is responsible for drawing function plots in the Numera GUI.
