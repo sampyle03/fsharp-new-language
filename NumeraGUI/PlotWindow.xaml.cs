@@ -1,16 +1,14 @@
 /*
-* PlotWindow.xaml.cs
-* ------------------
-* This file is responsible for drawing function plots in the Numera GUI.
-*
-* The window receives a list of (x, y) points from the F# interpreter
-* (generated from a command such as: graph x = x^2, (-5, 5);),
-* and then:
-*  - automatically scales the axes to fit the data,
-*  - draws the x- and y-axes,
-*  - adds tick marks and numeric labels,
-*  - and renders the function as a polyline on a Canvas.
-*/
+ * PlotWindow.xaml.cs
+ * ------------------
+ * Plotting window for the Numera GUI.
+ *
+ * This window:
+ *  - Receives graph commands from the user (e.g. "graph x = x^2, (-5, 5);")
+ *  - Requests evaluated (x, y) points from the F# interpreter
+ *  - Automatically scales and draws the plot
+ *  - Displays current variables and errors in-panel (no popups)
+ */
 
 using System;
 using System.Collections.Generic;
@@ -30,115 +28,127 @@ namespace NumeraGUI
         private const double PlotPaddingTop = 20;
         private const double PlotPaddingBottom = 40;
 
-        // Stores the current set of points being plotted
+        // Stores the currently plotted points
         private readonly List<Point> _points = new List<Point>();
 
-        // World-coordinate bounds used to scale the plot.
-        // These are automatically updated to fit the current data.
+        // World-coordinate bounds
         private double _worldMinX = -10.0;
         private double _worldMaxX = 10.0;
         private double _worldMinY = -10.0;
         private double _worldMaxY = 10.0;
 
-        // Delegate that is set by MainWindow.
-        // Given a graph command string, this returns a list of points from F#.
+        /*
+         * Delegate supplied by MainWindow.
+         * Given a graph expression string, returns a list of points.
+         */
         public Func<string, IEnumerable<Point>> GetPointsForExpression { get; set; }
 
         public PlotWindow()
         {
             InitializeComponent();
 
-            // Redraw the plot whenever the window is resized
+            // Redraw plot when canvas resizes
             if (PlotCanvas != null)
             {
                 PlotCanvas.SizeChanged += (s, e) => DrawPlot();
             }
         }
 
-        /// <summary>
-        /// Utility function to clamp a value between a minimum and maximum.
-        /// This is mainly used to keep labels inside the canvas bounds.
-        /// </summary>
-        private static double Clamp(double v, double min, double max)
-        {
-            if (v < min) return min;
-            if (v > max) return max;
-            return v;
-        }
+        /* ===================== PUBLIC API ===================== */
 
         /// <summary>
-        /// Called when the window finishes loading.
-        /// If any points already exist, this ensures they are drawn.
+        /// Allows MainWindow to update the Current Variables box.
+        /// Call this whenever interpreter variables change.
         /// </summary>
+        public void SetVariablesText(string variablesText)
+        {
+            if (VariablesBox != null)
+            {
+                VariablesBox.Text = variablesText ?? string.Empty;
+            }
+        }
+
+        /* ===================== ERROR HANDLING ===================== */
+
+        private void ShowError(string message)
+        {
+            if (ErrorBox != null)
+            {
+                ErrorBox.Text = message ?? string.Empty;
+            }
+        }
+
+        private void ClearError()
+        {
+            ShowError(string.Empty);
+        }
+
+        /* ===================== WINDOW EVENTS ===================== */
+
         private void PlotWindow_Loaded(object sender, RoutedEventArgs e)
         {
             DrawPlot();
         }
 
-        /// <summary>
-        /// Handles the Plot button.
-        /// Reads the expression from the text box, asks F# to generate points,
-        /// and then updates the plot.
-        /// </summary>
-        private void PlotButton_Click(object sender, RoutedEventArgs e)
-        {
-            // If the F# delegate has not been wired up, do nothing
-            if (GetPointsForExpression == null)
-                return;
-
-            string expr = FunctionTextBox.Text;
-
-            if (string.IsNullOrWhiteSpace(expr))
-                return;
-
-            try
-            {
-                var newPoints = GetPointsForExpression(expr);
-                PlotFromCoordinates(newPoints);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    $"Error while plotting:\n{ex.Message}",
-                    "Plot Error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-            }
-        }
-
-        /// <summary>
-        /// Displays a short help message explaining the expected graph syntax.
-        /// </summary>
         private void HelpButton_Click(object sender, RoutedEventArgs e)
         {
-            var plotHelpWindow = new PlotHelpWindow
+            var helpWindow = new PlotHelpWindow
             {
                 Owner = this
             };
 
-            plotHelpWindow.ShowDialog();
+            helpWindow.ShowDialog();
         }
 
-        /// <summary>
-        /// Clears the current plot and resets the input box.
-        /// This does not change any interpreter variables - it only clears the visual plot.
-        /// </summary>
+        /* ===================== BUTTON HANDLERS ===================== */
+
+        private void PlotButton_Click(object sender, RoutedEventArgs e)
+        {
+            ClearError();
+
+            if (GetPointsForExpression == null)
+            {
+                ShowError("Error: Plotting is not connected to the interpreter.");
+                return;
+            }
+
+            string expr = FunctionTextBox.Text;
+
+            if (string.IsNullOrWhiteSpace(expr))
+            {
+                ShowError("Error: Please enter a graph expression.");
+                return;
+            }
+
+            try
+            {
+                var points = GetPointsForExpression(expr);
+
+                if (points == null)
+                {
+                    ShowError("Error: No points returned for this expression.");
+                    return;
+                }
+
+                PlotFromCoordinates(points);
+            }
+            catch (Exception ex)
+            {
+                ShowError("Error: " + ex.Message);
+            }
+        }
+
         private void ClearButton_Click(object sender, RoutedEventArgs e)
         {
-            // Clear plotted data
+            ClearError();
+
             _points.Clear();
-
-            // Clear anything drawn on the canvas
             PlotCanvas.Children.Clear();
-
-            // Clear the input expression box
             FunctionTextBox.Clear();
         }
 
-        /// <summary>
-        /// Replaces the current plot data with a new set of points,
-        /// then rescales and redraws the plot.
-        /// </summary>
+        /* ===================== PLOTTING CORE ===================== */
+
         public void PlotFromCoordinates(IEnumerable<Point> points)
         {
             _points.Clear();
@@ -152,15 +162,10 @@ namespace NumeraGUI
             DrawPlot();
         }
 
-        /// <summary>
-        /// Automatically adjusts the world-coordinate bounds
-        /// so that all points are visible with a small margin.
-        /// </summary>
         private void FitWorldToPoints()
         {
             if (_points.Count == 0)
             {
-                // Default bounds when nothing is plotted
                 _worldMinX = -10.0;
                 _worldMaxX = 10.0;
                 _worldMinY = -10.0;
@@ -173,22 +178,20 @@ namespace NumeraGUI
             double minY = _points.Min(p => p.Y);
             double maxY = _points.Max(p => p.Y);
 
-            // Handle nearly-flat functions so they are still visible
             if (Math.Abs(maxX - minX) < 1e-9)
             {
-                minX -= 1.0;
-                maxX += 1.0;
+                minX -= 1;
+                maxX += 1;
             }
 
             if (Math.Abs(maxY - minY) < 1e-9)
             {
-                minY -= 1.0;
-                maxY += 1.0;
+                minY -= 1;
+                maxY += 1;
             }
 
-            // Add a small margin so the curve is not tight against the edges
-            double padX = (maxX - minX) * 0.10;
-            double padY = (maxY - minY) * 0.10;
+            double padX = (maxX - minX) * 0.1;
+            double padY = (maxY - minY) * 0.1;
 
             _worldMinX = minX - padX;
             _worldMaxX = maxX + padX;
@@ -196,184 +199,15 @@ namespace NumeraGUI
             _worldMaxY = maxY + padY;
         }
 
-        /// <summary>
-        /// Draws tick marks and numeric labels along the x-axis.
-        /// Labels are positioned near the x-axis line where possible.
-        /// </summary>
-        private void DrawXTicks(
-            double width,
-            double height,
-            Func<double, double> toCanvasX,
-            Func<double, double> toCanvasY)
+        /* ===================== DRAWING ===================== */
+
+        private static double Clamp(double value, double min, double max)
         {
-            const int tickCount = 10;
-            double step = (_worldMaxX - _worldMinX) / tickCount;
-
-            // Determine where the x-axis is drawn on the canvas
-            bool xAxisVisible = (_worldMinY <= 0 && 0 <= _worldMaxY);
-            double yAxisLine = xAxisVisible ? toCanvasY(0) : toCanvasY(_worldMinY);
-
-            for (int i = 0; i <= tickCount; i++)
-            {
-                double xValue = _worldMinX + i * step;
-                double x = toCanvasX(xValue);
-
-                // Tick mark
-                PlotCanvas.Children.Add(new Line
-                {
-                    X1 = x,
-                    Y1 = yAxisLine - 5,
-                    X2 = x,
-                    Y2 = yAxisLine + 5,
-                    Stroke = Brushes.Black,
-                    StrokeThickness = 1
-                });
-
-                // Numeric label
-                var label = new TextBlock
-                {
-                    Text = xValue.ToString("0.##"),
-                    FontSize = 12
-                };
-
-                double labelWidth = 30;
-                double labelX = x - (labelWidth / 2);
-                double labelY = yAxisLine + 8;
-
-                labelX = Clamp(labelX, 0, width - labelWidth);
-                labelY = Clamp(labelY, 0, height - 20);
-
-                Canvas.SetLeft(label, labelX);
-                Canvas.SetTop(label, labelY);
-                PlotCanvas.Children.Add(label);
-            }
+            if (value < min) return min;
+            if (value > max) return max;
+            return value;
         }
 
-        /// <summary>
-        /// Draws tick marks and numeric labels along the y-axis.
-        /// Labels are placed next to the y-axis line when possible.
-        /// </summary>
-        private void DrawYTicks(
-            double width,
-            double height,
-            Func<double, double> toCanvasX,
-            Func<double, double> toCanvasY)
-        {
-            const int tickCount = 10;
-            double step = (_worldMaxY - _worldMinY) / tickCount;
-
-            // Determine where the y-axis is drawn on the canvas
-            bool yAxisVisible = (_worldMinX <= 0 && 0 <= _worldMaxX);
-            double xAxisLine = yAxisVisible ? toCanvasX(0) : toCanvasX(_worldMinX);
-
-            for (int i = 0; i <= tickCount; i++)
-            {
-                double yValue = _worldMinY + i * step;
-                double y = toCanvasY(yValue);
-
-                // Tick mark
-                PlotCanvas.Children.Add(new Line
-                {
-                    X1 = xAxisLine - 5,
-                    Y1 = y,
-                    X2 = xAxisLine + 5,
-                    Y2 = y,
-                    Stroke = Brushes.Black,
-                    StrokeThickness = 1
-                });
-
-                // Numeric label
-                var label = new TextBlock
-                {
-                    Text = yValue.ToString("0.##"),
-                    FontSize = 12
-                };
-
-                double labelWidth = 40;
-                double labelX = xAxisLine - (labelWidth + 8);
-                double labelY = y - 8;
-
-                // If the axis is too close to the left edge, move labels to the right
-                if (labelX < 0)
-                {
-                    labelX = xAxisLine + 8;
-                }
-
-                labelX = Clamp(labelX, 0, width - labelWidth);
-                labelY = Clamp(labelY, 0, height - 20);
-
-                Canvas.SetLeft(label, labelX);
-                Canvas.SetTop(label, labelY);
-                PlotCanvas.Children.Add(label);
-            }
-        }
-
-        /// <summary>
-        /// Draws vertical grid lines aligned with the x-axis tick marks.
-        /// These lines run the full height of the usable plot area.
-        /// </summary>
-        private void DrawVerticalGridLines(
-            double width,
-            double height,
-            Func<double, double> toCanvasX,
-            Func<double, double> toCanvasY)
-                {
-                    const int gridCount = 10;
-                    double step = (_worldMaxX - _worldMinX) / gridCount;
-
-                    for (int i = 0; i <= gridCount; i++)
-                    {
-                        double xValue = _worldMinX + i * step;
-                        double x = toCanvasX(xValue);
-
-                        PlotCanvas.Children.Add(new Line
-                        {
-                            X1 = x,
-                            Y1 = 0,          // changed: start at very top of canvas
-                            X2 = x,
-                            Y2 = height,     // changed: end at very bottom of canvas
-                            Stroke = Brushes.LightGray,
-                            StrokeThickness = 1,
-                            StrokeDashArray = new DoubleCollection { 2, 2 }
-                        });
-                    }
-                }
-
-        /// <summary>
-        /// Draws horizontal grid lines aligned with the y-axis tick marks.
-        /// These lines run the full width of the usable plot area.
-        /// </summary>
-        private void DrawHorizontalGridLines(
-            double width,
-            double height,
-            Func<double, double> toCanvasX,
-            Func<double, double> toCanvasY)
-                {
-                    const int gridCount = 10;
-                    double step = (_worldMaxY - _worldMinY) / gridCount;
-
-                    for (int i = 0; i <= gridCount; i++)
-                    {
-                        double yValue = _worldMinY + i * step;
-                        double y = toCanvasY(yValue);
-
-                        PlotCanvas.Children.Add(new Line
-                        {
-                            X1 = 0,          // changed: start at far left of canvas
-                            Y1 = y,
-                            X2 = width,      // changed: end at far right of canvas
-                            Y2 = y,
-                            Stroke = Brushes.LightGray,
-                            StrokeThickness = 1,
-                            StrokeDashArray = new DoubleCollection { 2, 2 }
-                        });
-                    }
-                }
-
-        /// <summary>
-        /// Main drawing routine.
-        /// Clears the canvas, draws axes, ticks, and then renders the function curve.
-        /// </summary>
         private void DrawPlot()
         {
             if (PlotCanvas == null)
@@ -393,29 +227,72 @@ namespace NumeraGUI
             if (rangeX <= 0 || rangeY <= 0)
                 return;
 
-            // Work out how much space we actually have for the plot
             double usableWidth = width - PlotPaddingLeft - PlotPaddingRight;
             double usableHeight = height - PlotPaddingTop - PlotPaddingBottom;
 
             double scaleX = usableWidth / rangeX;
             double scaleY = usableHeight / rangeY;
 
-            // Convert world coordinates into canvas coordinates
             double ToCanvasX(double x) =>
                 PlotPaddingLeft + (x - _worldMinX) * scaleX;
 
             double ToCanvasY(double y) =>
                 PlotPaddingTop + usableHeight - (y - _worldMinY) * scaleY;
 
-            // Draw grid lines first so everything else appears on top
-            DrawVerticalGridLines(width, height, ToCanvasX, ToCanvasY);
-            DrawHorizontalGridLines(width, height, ToCanvasX, ToCanvasY);
+            DrawGridLines(width, height, ToCanvasX, ToCanvasY);
+            DrawAxes(width, height, ToCanvasX, ToCanvasY);
+            DrawTicks(width, height, ToCanvasX, ToCanvasY);
+            DrawCurve(ToCanvasX, ToCanvasY);
+        }
 
-            // Draw y-axis (x = 0) if visible
+        private void DrawGridLines(
+            double width,
+            double height,
+            Func<double, double> toCanvasX,
+            Func<double, double> toCanvasY)
+        {
+            const int gridCount = 10;
+
+            for (int i = 0; i <= gridCount; i++)
+            {
+                double t = (double)i / gridCount;
+
+                double x = toCanvasX(_worldMinX + t * (_worldMaxX - _worldMinX));
+                double y = toCanvasY(_worldMinY + t * (_worldMaxY - _worldMinY));
+
+                PlotCanvas.Children.Add(new Line
+                {
+                    X1 = x,
+                    Y1 = 0,
+                    X2 = x,
+                    Y2 = height,
+                    Stroke = Brushes.LightGray,
+                    StrokeThickness = 1,
+                    StrokeDashArray = new DoubleCollection { 2, 2 }
+                });
+
+                PlotCanvas.Children.Add(new Line
+                {
+                    X1 = 0,
+                    Y1 = y,
+                    X2 = width,
+                    Y2 = y,
+                    Stroke = Brushes.LightGray,
+                    StrokeThickness = 1,
+                    StrokeDashArray = new DoubleCollection { 2, 2 }
+                });
+            }
+        }
+
+        private void DrawAxes(
+            double width,
+            double height,
+            Func<double, double> toCanvasX,
+            Func<double, double> toCanvasY)
+        {
             if (_worldMinX <= 0 && 0 <= _worldMaxX)
             {
-                double x0 = ToCanvasX(0);
-
+                double x0 = toCanvasX(0);
                 PlotCanvas.Children.Add(new Line
                 {
                     X1 = x0,
@@ -427,11 +304,9 @@ namespace NumeraGUI
                 });
             }
 
-            // Draw x-axis (y = 0) if visible
             if (_worldMinY <= 0 && 0 <= _worldMaxY)
             {
-                double y0 = ToCanvasY(0);
-
+                double y0 = toCanvasY(0);
                 PlotCanvas.Children.Add(new Line
                 {
                     X1 = 0,
@@ -442,12 +317,67 @@ namespace NumeraGUI
                     StrokeThickness = 1
                 });
             }
+        }
 
-            // Draw tick marks and numeric labels
-            DrawXTicks(width, height, ToCanvasX, ToCanvasY);
-            DrawYTicks(width, height, ToCanvasX, ToCanvasY);
+        private void DrawTicks(
+            double width,
+            double height,
+            Func<double, double> toCanvasX,
+            Func<double, double> toCanvasY)
+        {
+            const int tickCount = 10;
 
-            // Draw the function curve
+            for (int i = 0; i <= tickCount; i++)
+            {
+                double t = (double)i / tickCount;
+
+                double xVal = _worldMinX + t * (_worldMaxX - _worldMinX);
+                double yVal = _worldMinY + t * (_worldMaxY - _worldMinY);
+
+                double x = toCanvasX(xVal);
+                double y = toCanvasY(yVal);
+
+                PlotCanvas.Children.Add(new Line
+                {
+                    X1 = x,
+                    Y1 = toCanvasY(0) - 5,
+                    X2 = x,
+                    Y2 = toCanvasY(0) + 5,
+                    Stroke = Brushes.Black,
+                    StrokeThickness = 1
+                });
+
+                PlotCanvas.Children.Add(new Line
+                {
+                    X1 = toCanvasX(0) - 5,
+                    Y1 = y,
+                    X2 = toCanvasX(0) + 5,
+                    Y2 = y,
+                    Stroke = Brushes.Black,
+                    StrokeThickness = 1
+                });
+
+                AddLabel(xVal.ToString("0.##"), x - 15, toCanvasY(0) + 8);
+                AddLabel(yVal.ToString("0.##"), toCanvasX(0) - 45, y - 8);
+            }
+        }
+
+        private void AddLabel(string text, double x, double y)
+        {
+            var label = new TextBlock
+            {
+                Text = text,
+                FontSize = 12
+            };
+
+            Canvas.SetLeft(label, x);
+            Canvas.SetTop(label, y);
+            PlotCanvas.Children.Add(label);
+        }
+
+        private void DrawCurve(Func<double, double> toCanvasX,
+                               Func<double, double> toCanvasY)
+        {
             var polyline = new Polyline
             {
                 Stroke = Brushes.Blue,
@@ -456,7 +386,9 @@ namespace NumeraGUI
 
             foreach (var p in _points)
             {
-                polyline.Points.Add(new Point(ToCanvasX(p.X), ToCanvasY(p.Y)));
+                polyline.Points.Add(new Point(
+                    toCanvasX(p.X),
+                    toCanvasY(p.Y)));
             }
 
             PlotCanvas.Children.Add(polyline);
