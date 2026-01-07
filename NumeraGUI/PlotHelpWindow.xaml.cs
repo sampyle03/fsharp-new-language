@@ -1,4 +1,4 @@
-﻿/*
+/*
 * PlotHelpWindow.xaml.cs
 * ------------------
 * This file controls the Help window for plotting.

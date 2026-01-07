@@ -1,5 +1,4 @@
-<<<<<<< HEAD
-﻿<Window x:Class="NumeraGUI.PlotHelpWindow"
+<Window x:Class="NumeraGUI.PlotHelpWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Numera Plot Help"
