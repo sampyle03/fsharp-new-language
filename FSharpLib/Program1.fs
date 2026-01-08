@@ -185,6 +185,9 @@ module Numera =
         | TypeInt | TypeFloat | TypeBool
         | Equals | Semicolon | Comma
         | Graph
+        | GraphDif
+        | GraphInt
+        | FindRoot
         
 
     let varDeclarationRHS 
@@ -243,17 +246,20 @@ module Numera =
     let charToDigit (c:char) = (int)((int)c - (int)'0')
     let parseError = System.Exception("Parser error")
 
+    // identifies whether value is a float
     let isFloat (value) =
         let s = string value
         let mutable d = 0.0
         let ok = Double.TryParse(s, &d)
         ok && s.Contains(".")
 
+    // scans decimal number to understand it
     let rec scanDecimal(chars: char list) (value: string) : (char list * string) =
         match chars with
         | c::tail when isDigit c -> scanDecimal tail (value + string c)
         | _ -> (chars, value)
 
+    // scans number (integer or decimal) to understand it
     let rec scanNumber(chars: char list) (value: string) : (char list * string) = 
         match chars with
         | c :: tail when isDigit c -> 
@@ -266,6 +272,7 @@ module Numera =
                             (rest, value + "." + decimal)
         | _ -> (chars, value)
 
+    // scans identifier (written text that is not a number) to understand it
     let rec scanIdentifier(remaining, identStr) =
         match remaining with
         c :: tail when isLetter c -> scanIdentifier(tail, identStr + string c)
@@ -306,16 +313,17 @@ module Numera =
                                            | "true" -> Identifier "true" :: scan remaining
                                            | "false" -> Identifier "false" :: scan remaining
                                            | "graph" -> Graph :: scan remaining
+                                           | "graphdif" -> GraphDif :: scan remaining
+                                           | "graphint" -> GraphInt :: scan remaining
+                                           | "findroot" -> FindRoot :: scan remaining
                                            | "x" -> Identifier "x" :: scan remaining
                                            | "y" -> Identifier "y" :: scan remaining
+                                           | "exp" -> Identifier "exp" :: scan remaining
+                                           | "log" -> Identifier "log" :: scan remaining
                                            | other -> Identifier other :: scan remaining
             | _ -> raise lexError
 
         scan (str2lst input)
-
-    let readInputString() : string = 
-        Console.Write("Enter an expression: ")
-        Console.ReadLine()
 
     let parser tokenList =
         Console.WriteLine("Parsing: {0}", tokenList.ToString())
@@ -333,10 +341,14 @@ module Numera =
                 let (exprAST, restTokens) = parseGraphStatement tokens
                 restTokens
 
+        // graph statements are all parsed te same way
         and parseGraphStatement tokens =
             match tokens with
-            | Graph :: Identifier name :: Equals :: tail ->
-                parseExpression tail // parse RHS and return remaining tokens
+            | Graph :: Identifier name :: Equals :: tail
+            | GraphDif :: Identifier name :: Equals :: tail
+            | GraphInt :: Identifier name :: Equals :: tail
+            | FindRoot :: Identifier name :: Equals :: tail ->
+                parseExpression tail
             | _ -> parseExpression tokens
 
         and parseExpression tokens =
@@ -410,20 +422,23 @@ module Numera =
         parseStatement tokenList
 
 
+    // used to evaluate statements
     let parseAndEval tokenList = 
-        // Converts a list of (x, y) coordinate pairs into a strin.
+
+        // pushes temporary binding for variable during graph evaluation
         let pushTempBinding (name:string) (v:Val) =
             let old = Map.tryFind name !symbolTable
-            let t = match v  with | ValInt _ -> IntType | ValFloat _ -> FloatType | ValBool _ -> BoolType | ValString _ -> StringType
-            symbolTable := Map.add name {valType = t;value = Some v } !symbolTable
+            let temp = match v with | ValInt _ -> IntType | ValFloat _ -> FloatType | ValBool _ -> BoolType | ValString _ -> StringType
+            symbolTable := Map.add name { valType = temp; value = Some v } !symbolTable
             old
 
-        let popRestoreBinding (name:string) (oldOption:Symbol option) =
-            match oldOption with
+        // pops binding after graph evaluation
+        let popRestoreBinding (name:string) (oldOpt: Symbol option) =
+            match oldOpt with
             | None -> symbolTable := Map.remove name !symbolTable
             | Some s -> symbolTable := Map.add name s !symbolTable
 
-        // Converts a value into a human-readable string.
+        // converts a Val to a string
         let valToString (v:Val) =
             match v with
             | ValInt i -> sprintf "%d" i
@@ -431,12 +446,13 @@ module Numera =
             | ValBool b -> if b then "true" else "false"
             | ValString s -> s
 
+        // formats list of pairs - used for graph output
         let formatPairs (pairs:(Val * Val) list) =
             let elems = pairs |> List.map (fun (x,y) -> sprintf "(%s,%s)" (valToString x) (valToString y))
             "[" + (String.Join(",", elems)) + "]"
 
         // split graph tokens into equation and graph range
-        let splitGraphTokens (tokens: terminal list)
+        let rec splitGraphTokens (tokens: terminal list)
             : (terminal list * float * float * terminal list) =
 
             let rec loop accumulatedTokens bracketDepth remainingTokens =
@@ -459,7 +475,7 @@ module Numera =
                     let yRange = parseNumber yToken
 
                     (List.rev accumulatedTokens, xRange, yRange, tail)
-
+                    
                 | headToken :: tailTokens ->
                     let newBracketDepth =
                         match headToken with
@@ -473,7 +489,7 @@ module Numera =
 
 
         // evaluates graph
-        let rec varGraphRHS (exprTokens:terminal list) (xMax:float) (yMax:float) : (Val * Val) list =
+        and varGraphRHS (varName:string) (exprTokens:terminal list) (xMax:float) (yMax:float) : (Val * Val) list =
             let numOfPoints = 100
             let rec sample i acc =
                 if i >= numOfPoints then List.rev acc
@@ -483,23 +499,111 @@ module Numera =
                         let j = int computedX
                         if float j = computedX then ValInt j else ValFloat computedX
 
-                    // push temporary x variable binding
-                    let previousVal = pushTempBinding "x" xValSymb
+                    let prevVar = pushTempBinding varName xValSymb
+                    let prevX = pushTempBinding "x" xValSymb
                     try
                         try
                             let (remaining, yVal) = evalExpressionVal exprTokens
-                            // range checking
                             let yValFloat = valToFloat yVal
                             if yValFloat > -yMax && yValFloat < yMax then
                                 sample (i + 1) ((xValSymb, yVal) :: acc)
                             else
                                 sample (i + 1) acc
                         with ex ->
-                            Console.WriteLine("Skipping x={0}: {1}", computedX, ex.Message)
+                            Console.WriteLine("Skipping {0}={1}: {2}", varName, computedX, ex.Message)
                             sample (i + 1) acc
                     finally
-                        // restore previous x variable binding
-                        popRestoreBinding "x" previousVal
+                        popRestoreBinding "x" prevX
+                        popRestoreBinding varName prevVar
+            sample 0 []
+
+        // differentiates a graph equation
+        and varGraphDifRHS (varName:string) (exprTokens:terminal list) (xMax:float) (yMax:float) : (Val * Val) list =
+            let numOfPoints = 100
+            let delta = 1e-6
+            let rec sample i acc =
+                if i >= numOfPoints then List.rev acc
+                else
+                    let x = -xMax + float (i + 1) * (2.0 * xMax) / float (numOfPoints + 1)
+                    let xValSymb =
+                        let j = int x
+                        if float j = x then ValInt j else ValFloat x
+
+                    let valueToBind =
+                        if float (int (x + delta)) = (x + delta) then
+                            ValInt (int (x + delta))
+                        else
+                            ValFloat (x + delta)
+                    let prevPlusVar = pushTempBinding varName valueToBind
+                    let prevPlusX   = pushTempBinding "x" valueToBind
+                    let yPlus =
+                        try
+                            let (_, v) = evalExpressionVal exprTokens
+                            valToFloat v
+                        finally
+                            popRestoreBinding "x" prevPlusX
+                            popRestoreBinding varName prevPlusVar
+                    let prevMinusVar = pushTempBinding varName (if float (int (x - delta)) = x - delta then ValInt (int (x - delta)) else ValFloat (x - delta))
+                    let prevMinusX = pushTempBinding "x" (if float (int (x - delta)) = x - delta then ValInt (int (x - delta)) else ValFloat (x - delta))
+                    let yMinus =
+                        try
+                            let (_, evalVal) = evalExpressionVal exprTokens
+                            valToFloat evalVal
+                        finally
+                            popRestoreBinding "x" prevMinusX
+                            popRestoreBinding varName prevMinusVar
+                    let deriv = (yPlus - yMinus) / (2.0 * delta)
+                    let yVal =
+                        if deriv = floor deriv then ValInt (int deriv) else ValFloat deriv
+                    if valToFloat yVal > -yMax && valToFloat yVal < yMax then
+                        sample (i + 1) ((xValSymb, yVal) :: acc)
+                    else
+                        sample (i + 1) acc
+            sample 0 []
+
+        and varGraphIntRHS (varName:string) (exprTokens:terminal list) (xmin:float) (xMax:float) (yMax:float) : (Val * Val) list =
+            let numOfPoints = 100
+            let nSub = 200
+            let makeValFromFloat (t:float) =
+                let rounded = System.Math.Round(t)
+                if System.Math.Abs(t - rounded) < 1e-12 then ValInt (int rounded)
+                else ValFloat t
+
+            let safeNSub = max 1 nSub
+            let rec sample i acc =
+                if i >= numOfPoints then List.rev acc
+                else
+                    let x = xmin + float (i + 1) * ( (xMax - xmin) / float (numOfPoints + 1) )
+                    let xValSymb = makeValFromFloat x
+
+                    let lowerLimit = xmin
+                    let upperLimit = x
+                    let dx = (upperLimit - lowerLimit) / float safeNSub
+
+                    let rec integrate stepIndex accInt =
+                        if stepIndex > safeNSub then accInt
+                        else
+                            let t = lowerLimit + float stepIndex * dx
+                            let prevVar = pushTempBinding varName (makeValFromFloat t)
+                            let prevX   = pushTempBinding "x" (makeValFromFloat t)
+                            let fval =
+                                try
+                                    let (_, v) = evalExpressionVal exprTokens
+                                    valToFloat v
+                                finally
+                                    popRestoreBinding "x" prevX
+                                    popRestoreBinding varName prevVar
+                            let weight = if stepIndex = 0 || stepIndex = safeNSub then 0.5 else 1.0
+                            integrate (stepIndex + 1) (accInt + weight * fval)
+
+                    let integral = dx * integrate 0 0.0
+                    let yVal = if integral = floor integral then ValInt (int integral) else ValFloat integral
+
+                    if valToFloat yVal > -yMax && valToFloat yVal < yMax then
+                        sample (i + 1) ((xValSymb, yVal) :: acc)
+                    else
+                        sample (i + 1) acc
+
             sample 0 []
 
         and evalStatement tokens =
@@ -510,7 +614,30 @@ module Numera =
                     match remainder with
                     | Semicolon :: rest -> rest
                     | _ -> remainder
-                let pairs = varGraphRHS exprTokens xMax yMax
+                let pairs = varGraphRHS name exprTokens xMax yMax
+                Console.WriteLine("{0}", formatPairs pairs)
+                (restAfter, 0.0)
+            | GraphDif :: Identifier name :: Equals :: tail ->
+                let (exprTokens, xMax, yMax, remainder) = splitGraphTokens tail
+                let restAfter = 
+                    match remainder with
+                    | Semicolon :: rest -> rest
+                    | _ -> remainder
+                let pairs = varGraphDifRHS name exprTokens xMax yMax
+                Console.WriteLine("{0}", formatPairs pairs)
+                (restAfter, 0.0)
+            | GraphInt :: Identifier name :: Equals :: tail ->
+                // splitGraphTokens currently returns (exprTokens, xMax, yMax, remainder)
+                let (exprTokens, xMax, yMax, remainder) = splitGraphTokens tail
+                let restAfter =
+                    match remainder with
+                    | Semicolon :: rest -> rest
+                    | _ -> remainder
+
+                // Provide xmin first (here we use symmetric range -xMax..xMax to preserve old behaviour)
+                let xmin = -xMax
+                let pairs = varGraphIntRHS name exprTokens xmin xMax yMax
+
                 Console.WriteLine("{0}", formatPairs pairs)
                 (restAfter, 0.0)
             | Let :: TypeInt :: Identifier name :: Equals :: tail
@@ -574,7 +701,14 @@ module Numera =
                 let (tokenRemainder, factorVal) = evalUnaryVal tail
                 let result = valRem leftVal factorVal
                 evalRestOfTermVal (tokenRemainder, result)
+
+            | (NumInt _ | NumFloat _ | Identifier _ | Lpar) :: _ ->
+                let (tokenRemainder, factorVal) = evalPowerVal tokens
+                let result = valMult leftVal factorVal
+                evalRestOfTermVal (tokenRemainder, result)
+
             | _ -> (tokens, leftVal)
+
 
         and evalUnaryVal tokens =
             match tokens with
@@ -611,18 +745,18 @@ module Numera =
             | Identifier name :: tail ->
                 if name = "sin" || name = "cos" || name = "tan" then
                     let (rest, argVal) = evalFactorVal tail
-                    let af = valToFloat argVal
+                    let valAsFloat = valToFloat argVal
                     match name with
-                    | "sin" -> (rest, ValFloat (Math.Sin af))
-                    | "cos" -> (rest, ValFloat (Math.Cos af))
-                    | "tan" -> (rest, ValFloat (Math.Tan af))
+                    | "sin" -> (rest, ValFloat (Math.Sin valAsFloat))
+                    | "cos" -> (rest, ValFloat (Math.Cos valAsFloat))
+                    | "tan" -> (rest, ValFloat (Math.Tan valAsFloat))
                     | _ -> failwith "unreachable"
                 else if name = "exp" || name = "log" then
                     let (rest, argVal) = evalFactorVal tail
-                    let af = valToFloat argVal
+                    let valAsFloat = valToFloat argVal
                     match name with
-                    | "exp" -> (rest, ValFloat (Math.Exp af))
-                    | "log" -> (rest, ValFloat (Math.Log10 af))
+                    | "exp" -> (rest, ValFloat (Math.Exp valAsFloat))
+                    | "log" -> (rest, ValFloat (Math.Log10 valAsFloat))
                     | _ -> failwith "unreachable"
                 else
                     // variable lookup
@@ -643,25 +777,291 @@ module Numera =
         evalStatement tokenList
 
 
-    let rec printTokenList (lst:list<terminal>) : list<string> = 
-        match lst with
-        head::tail -> Console.Write("{0} ",head.ToString())
-                      printTokenList tail
-                  
-        | [] -> Console.Write("EOL\n")
-                []
 
-    let rec repeat() =
-        let input = readInputString()
-        if input.ToLower() = "exit" then
-            Console.WriteLine("Exiting interpreter.")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+namespace FSharpLib
+
+module Interpreter =
+    open System
+    open FSharpLib.Numera
+
+    // Convert ValType to an interpreter-friendly string
+    let private valTypeToString (t: ValType) =
+        match t with
+        | IntType   -> "int"
+        | FloatType -> "float"
+        | BoolType  -> "bool"
+        | StringType -> "string"
+
+    // Convert Val to an interpreter-friendly string
+    let private valToString (v: Val) =
+        match v with
+        | ValInt i    -> string i
+        | ValFloat f  -> string f
+        | ValBool b   -> string b
+        | ValString s -> "\"" + s + "\""
+
+
+    let GetVariables () : string =
+        !symbolTable // dereferences the ref
+        |> Map.toList
+        |> List.map (fun (name, symbol) ->
+            let valueStr =
+                match symbol.value with
+                | None      -> "<uninitialised>"
+                | Some v    -> valToString v
+            sprintf "%s : %s = %s" name (valTypeToString symbol.valType) valueStr
+        )
+        |> String.concat Environment.NewLine
+
+    /// Evaluate one or more statements and return the result of the last one
+    /// This is what the GUI calls     
+    let Evaluate (source:string) : string =
+        try
+            let tokens = lexer source
+
+            // Evaluate all statements in sequence, using the shared symbolTable
+            let rec evalAll tokens lastValue =
+                match tokens with
+                | [] -> lastValue
+                | _ ->
+                    let (rest, value) = parseAndEval tokens
+
+                    // If the parser didn't consume anything, avoid infinite loop
+                    if rest = tokens then
+                        value
+                    else
+                        evalAll rest value
+
+            match tokens with
+            | [] ->
+                // Empty input -> no result
+                ""
+            | _ ->
+                let finalVal = evalAll tokens 0.0
+                finalVal.ToString()
+        with ex ->
+            "Error: " + ex.Message
+
+
+
+    /// ------------------------- Plotting support for WPF ------------------------
+
+    /// Parse a graph command like:
+    ///   graph y = x^2, (-10, 10);
+    ///   graphdif y = sin(x), (-5, 5);
+    ///   graphint y = x^3, (-2, 2);
+    ///   findroot y = x^2 - 4, (-10, 10);
+    /// into (variable name, expression string, xmin, xmax)
+    let private parseGraphCommand (input : string) =
+        let trimmed =
+            input.Trim()
+                 .TrimEnd(';')
+
+        let firstWord =
+            trimmed.Split([|' '; '\t'|], StringSplitOptions.RemoveEmptyEntries)
+            |> Array.head
+            |> fun s -> s.ToLowerInvariant()
+
+        if not (firstWord = "graph" || firstWord = "graphdif" || firstWord = "graphint" || firstWord = "findroot") then
+            failwith "Plot command must start with 'graph', 'graphdif', 'graphint', or 'findroot'. Example: graph x = x^2, (-10, 10);"
+
+        // Drop the keyword
+        let afterKeyword = trimmed.Substring(firstWord.Length).Trim()    // e.g. "y = x^2, (-10, 10)"
+
+        // Split at the first comma: left is "y = x^2", right is "(-10, 10)"
+        let commaIndex = afterKeyword.IndexOf(',')
+        if commaIndex < 0 then
+            // allow missing explicit range (defaults in GetPointsForExpression)
+            let exprPart = afterKeyword.Trim()
+            let equalsIndex = exprPart.IndexOf('=')
+            if equalsIndex < 0 then failwith "Graph command must be of the form: graph x = expression, (min, max);"
+            let varName    = exprPart.Substring(0, equalsIndex).Trim()
+            let exprString = exprPart.Substring(equalsIndex + 1).Trim()
+            // default range
+            firstWord, varName, exprString, -10.0, 10.0
         else
-            let tokens = lexer input
-            let (_, result) = parseAndEval tokens 
-            Console.WriteLine("Result = {0}", result)
-            repeat()
+            let exprPart  = afterKeyword.Substring(0, commaIndex).Trim()   // "y = x^2"
+            let rangePart = afterKeyword.Substring(commaIndex + 1).Trim()  // "(-10, 10)"
 
-    let main argv  =
-        Console.WriteLine("Simple Interpreter - Enter Code (type 'exit' to quit)")
-        repeat()
-        0
+            // Extract variable name and expression from "x = x^2"
+            let equalsIndex = exprPart.IndexOf('=')
+            if equalsIndex < 0 then failwith "Graph command must be of the form: graph y = expression, (min, max);"
+
+            let varName    = exprPart.Substring(0, equalsIndex).Trim()       // "x"
+            let exprString = exprPart.Substring(equalsIndex + 1).Trim()      // "x^2"
+
+            if String.IsNullOrWhiteSpace(varName) then failwith "Graph command must specify a variable name, e.g. graph y = x^2, (-10, 10);"
+
+            // Parse range "(min, max)"
+            if not (rangePart.StartsWith("(") && rangePart.EndsWith(")")) then failwith "Range must be in the form (min, max), e.g. (-10, 10)."
+
+            let rangeClean = rangePart.TrimStart('(').TrimEnd(')').Trim() // "-10, 10"
+
+            let parts = rangeClean.Split([|','|], StringSplitOptions.RemoveEmptyEntries)
+
+            if parts.Length <> 2 then failwith "Range must contain exactly two values: (min, max)."
+
+            let parseDouble (s : string) = System.Double.Parse(s.Trim(), Globalization.CultureInfo.InvariantCulture)
+
+            let xmin = parseDouble parts.[0]
+            let xmax = parseDouble parts.[1]
+
+            if xmin >= xmax then failwith "Range must satisfy min < max."
+
+            (firstWord, varName, exprString, xmin, xmax)
+
+
+    /// Evaluate an expression string with a particular variable bound to x.
+    /// This uses existing lexer + parseAndEval + symbolTable.
+    let private evalExpressionWithVar (varName : string) (exprString : string) (x : float) : float =
+        // Save the old bindings for the two names we will touch (if any)
+        let oldX = Map.tryFind "x" !symbolTable
+        let oldVar = if varName = "x" then oldX else Map.tryFind varName !symbolTable
+
+        try
+            let symbol = { valType = FloatType; value = Some (ValFloat x) }
+            // Add or override only the two entries we need
+            symbolTable := Map.add "x" symbol !symbolTable
+            if varName <> "x" then
+                symbolTable := Map.add varName symbol !symbolTable
+
+            // Tokenise and evaluate with temporary bindings
+            let tokens = lexer exprString
+            let (_, result) = parseAndEval tokens
+            result
+        finally
+            // Restore bindings individually (remove if previously absent)
+            match oldX with
+            | None -> symbolTable := Map.remove "x" !symbolTable
+            | Some s -> symbolTable := Map.add "x" s !symbolTable
+
+            if varName <> "x" then
+                match oldVar with
+                | None -> symbolTable := Map.remove varName !symbolTable
+                | Some s -> symbolTable := Map.add varName s !symbolTable
+
+
+
+    /// Public function for the WPF plot window.
+    /// Expects the full 'graph' command as typed in the GUI, e.g.:
+    ///   graph x = x^2, (-10, 10);
+    /// Returns a list of (x, y) points sampling the function over [xmin, xmax].
+    let GetPointsForExpression (input : string) : (float * float) list =
+        let mode, varName, exprString, xmin, xmax = parseGraphCommand input
+
+        // Number of samples between xmin and xmax
+        let steps = 200
+        let step  = (xmax - xmin) / float steps
+
+        let evalAt x =
+            try evalExpressionWithVar varName exprString x
+            with _ -> nan
+
+        match mode with
+        | "graph" ->
+            [ for i in 0 .. steps ->
+                let x = xmin + float i * step
+                let y = evalAt x
+                (x, y) ]
+
+        | "graphdif" ->
+            // central difference
+            let h = (xmax - xmin) / float steps / 1000.0 |> max 1e-6
+            [ for i in 0 .. steps ->
+                let x = xmin + float i * step
+                let yPlus = evalAt (x + h)
+                let yMinus = evalAt (x - h)
+                let deriv =
+                    if System.Double.IsNaN(yPlus) || System.Double.IsNaN(yMinus)
+                    then nan
+                    else (yPlus - yMinus) / (2.0 * h)
+                (x, deriv) ]
+
+        | "graphint" ->
+            // Uses the trapezoidal rule
+            [ for sampleIndex in 0 .. steps ->
+                let currentX = xmin + float sampleIndex * step
+
+                // Number of subintervals used for numerical integration
+                let subIntervals = 200
+                let integrationStartX = xmin
+                let integrationEndX = currentX
+                let deltaX =
+                    if subIntervals = 0 then 0.0
+                    else (integrationEndX - integrationStartX) / float subIntervals
+
+                // Trapezoidal integration
+                let rec integrateSubIntervals (currentSubIntervalIndex : int) (accumulatedArea : float) =
+                    if currentSubIntervalIndex > subIntervals then accumulatedArea
+                    else
+                        let evaluationX = integrationStartX + float currentSubIntervalIndex * deltaX
+                        let functionValueAtX = evalAt evaluationX
+
+                        let trapezoidWeight =
+                            if currentSubIntervalIndex = 0 || currentSubIntervalIndex = subIntervals then 0.5
+                            else 1.0
+
+                        integrateSubIntervals (currentSubIntervalIndex + 1) (accumulatedArea + trapezoidWeight * functionValueAtX)
+
+                // Final integral value for this x
+                let integratedValue =
+                    if System.Double.IsNaN integrationStartX || System.Double.IsNaN integrationEndX then nan
+                    else deltaX * integrateSubIntervals 0 0.0
+
+                (currentX, integratedValue) ]
+
+
+        | "findroot" ->
+            // Newton-Raphson with fallback to bisection if derivative is zero
+            let initialGuess = (xmin + xmax) / 2.0
+            let tolerance = 1e-10
+            let maxIterations = 100
+    
+            let evalAt x =
+                try evalExpressionWithVar varName exprString x
+                with _ -> nan
+    
+            // 
+            let derivativeAt x =
+                let delta = 1e-6
+                let yPlus = evalAt (x + delta)
+                let yMinus = evalAt (x - delta)
+                if System.Double.IsNaN(yPlus) || System.Double.IsNaN(yMinus) then nan
+                else (yPlus - yMinus) / (2.0 * delta)
+    
+            // Newton-Raphson iteration
+            let rec newtonIteration x count =
+                if count >= maxIterations then None
+                else
+                    let currentVal = evalAt x
+                    let derivVal = derivativeAt x
+            
+                    if System.Double.IsNaN(currentVal) || System.Double.IsNaN(derivVal) then None
+                    elif abs derivVal < 1e-12 then None  // Derivative too small
+                    else
+                        let xNext = x - currentVal / derivVal
+                        if abs (xNext - x) < tolerance then Some xNext
+                        else newtonIteration xNext (count + 1)
+    
+            let root =
+                match newtonIteration initialGuess 0 with
+                | Some r -> r
+                | None -> failwith "Newton-Raphson failed"
+    
+            [ (root, 0.0) ]
+
+        | _ -> failwith "Unknown graph mode"
