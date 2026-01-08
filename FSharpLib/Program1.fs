@@ -746,9 +746,9 @@ module Interpreter =
         if String.IsNullOrWhiteSpace(varName) then
             failwith "Graph command must specify a variable name, e.g. graph x = x^2, (-10, 10);"
 
-        // Parse range "(min, max)"
+        // Parse range "(min, max)" or "(min, max, dx)"
         if not (rangePart.StartsWith("(") && rangePart.EndsWith(")")) then
-            failwith "Range must be in the form (min, max), e.g. (-10, 10)."
+            failwith "Range must be in the form (min, max), e.g. (-10, 10) or (min, max, dx)."
 
         let rangeClean =
             rangePart.TrimStart('(')
@@ -758,8 +758,8 @@ module Interpreter =
         let parts =
             rangeClean.Split([|','|], StringSplitOptions.RemoveEmptyEntries)
 
-        if parts.Length <> 2 then
-            failwith "Range must contain exactly two values: (min, max)."
+        if parts.Length <> 2 && parts.Length <> 3 then
+            failwith "Range must contain (min, max) or (min, max, dx)."
 
         let parseDouble (s : string) =
             System.Double.Parse(
@@ -773,7 +773,16 @@ module Interpreter =
         if xmin >= xmax then
             failwith "Range must satisfy min < max."
 
-        varName, exprString, xmin, xmax
+        let dxOpt = 
+            if parts.Length = 3 then
+                let dx = parseDouble parts.[2]
+                if dx <= 0.0 then
+                    failwith "Step size dx must be > 0."
+                Some dx
+            else
+                None
+
+        varName, exprString, xmin, xmax, dxOpt
 
 
     /// Evaluate an expression string with a particular variable bound to x.
@@ -803,15 +812,34 @@ module Interpreter =
     /// Public function for the WPF plot window.
     /// Expects the full 'graph' command as typed in the GUI, e.g.:
     ///   graph x = x^2, (-10, 10);
-    /// Returns a list of (x, y) points sampling the function over [xmin, xmax].
+    /// Returns list of (x, y) points for the graph command.
+    /// If dx is included in the range, it uses dx; otherwise uses auto sampling.
     let GetPointsForExpression (input : string) : (float * float) list =
-        let varName, exprString, xmin, xmax = parseGraphCommand input
+        let varName, exprString, xmin, xmax, dxOpt = parseGraphCommand input
 
-        // Number of samples between xmin and xmax
-        let steps = 200
-        let step  = (xmax - xmin) / float steps
+        // Safety cap so an extremely small dx cannot freeze the UI
+        let maxPoints = 5000
 
-        [ for i in 0 .. steps ->
-            let x = xmin + float i * step
-            let y = evalExpressionWithVar varName exprString x
-            (x, y) ]
+        match dxOpt with
+        | Some dx ->
+            let span = xmax - xmin
+            let rawCount = int (ceil (span / dx)) + 1
+            let count = min rawCount maxPoints
+
+            // If we had to cap, adjust dx so we still fill the domain
+            let effectiveDx = span / float (count - 1)
+
+            [ for i in 0 .. (count - 1) ->
+                let x = xmin + float i * effectiveDx
+                let y = evalExpressionWithVar varName exprString x
+                (x, y) ]
+
+        | None ->
+            // Automatic sampling
+            let steps = 200
+            let step = (xmax - xmin) / float steps
+
+            [ for i in 0 .. steps ->
+                let x = xmin + float i * step
+                let y = evalExpressionWithVar varName exprString x
+                (x, y) ]
