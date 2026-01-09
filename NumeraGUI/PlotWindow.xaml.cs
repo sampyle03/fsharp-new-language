@@ -385,8 +385,10 @@ namespace NumeraGUI
             if (PlotCanvas == null)
                 return;
 
-            double width = PlotCanvas.ActualWidth;
-            double height = PlotCanvas.ActualHeight;
+            for (int i = 0; i <= tickCount; i++)
+            {
+                double xValue = _worldMinX + i * step;
+                double x = toCanvasX(xValue);
 
             PlotCanvas.Children.Clear();
 

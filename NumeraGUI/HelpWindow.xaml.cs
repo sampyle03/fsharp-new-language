@@ -1,4 +1,4 @@
-﻿/*
+/*
 * HelpWindow.xaml.cs
 * ------------------
 * This file controls the Help window for the Numera application.
