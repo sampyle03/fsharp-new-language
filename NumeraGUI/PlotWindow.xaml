@@ -1,48 +1,29 @@
 <!--
     PlotWindow.xaml
-    ----------------
-    This file defines the layout of the plotting window in the Numera application.
 
-    The purpose of this window is to:
-      - allow the user to enter a graph command (e.g. graph x = x^2, (-5, 5);),
-      - provide buttons to plot, clear, or get help,
-      - and display the resulting graph inside a Canvas.
-
-    All plotting logic (axes, scaling, ticks, drawing the curve)
-    is handled in PlotWindow.xaml.cs.
-    This file only defines the visual structure of the window.
+    Plotting window layout:
+      - Header bar at the top
+      - Top row (above plot): Current Variables | Enter expression | Errors
+      - Plot canvas fills remaining space
 -->
 
 <Window x:Class="NumeraGUI.PlotWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Numera Plotting"
-        Height="650"
+        Height="800"
         Width="1200"
         Loaded="PlotWindow_Loaded">
 
-    <!--
-        Root grid used to split the window into:
-          - a header row,
-          - a control/input row,
-          - and the main plotting area.
-    -->
-    <Grid>
+    <DockPanel LastChildFill="True">
 
-        <!-- Define the three vertical sections of the window -->
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>  <!-- Header -->
-            <RowDefinition Height="Auto"/>  <!-- Controls -->
-            <RowDefinition Height="*"/>     <!-- Plot area -->
-        </Grid.RowDefinitions>
+        <!-- ===================== HEADER / NAV BAR ===================== -->
+        <Grid DockPanel.Dock="Top"
+              Background="#6CB4EE"
+              Height="65">
 
-        <!-- ===================== HEADER ===================== -->
-        <!-- Simple header displaying the application name -->
-        <Border Grid.Row="0"
-                Background="#74B9F0"
-                Padding="10">
-            <TextBlock Text="Numera"
-                       FontSize="24"
+            <TextBlock Text="Numera - Plotting"
+                       FontSize="30"
                        FontWeight="Bold"
                        HorizontalAlignment="Center"/>
         </Border>
@@ -64,62 +45,182 @@
                        Margin="0,0,0,5"
                        HorizontalAlignment="Center"/>
 
-            <!--
-                TextBox where the user enters a graph command.
-                Example format:
-                  graph x = x^2, (-5, 5);
-            -->
-            <TextBox x:Name="FunctionTextBox"
-                     Width="350"
-                     HorizontalAlignment="Center"/>
+            <Button x:Name="HelpButton"
+                    Width="32"
+                    Height="32"
+                    Margin="0,4,40,4"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Right"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Padding="0"
+                    Click="HelpButton_Click"
+                    ToolTip="Click for help"
+                    ToolTipService.InitialShowDelay="200">
 
-            <!-- Buttons related to plotting actions -->
-            <StackPanel Orientation="Horizontal"
-                        Margin="0,10,0,0"
-                        HorizontalAlignment="Center">
+                <Grid Width="32" Height="32">
+                    <Ellipse Width="32"
+                             Height="32"
+                             Stroke="Black"
+                             StrokeThickness="3"
+                             Fill="Transparent"/>
+                    <TextBlock Text="?"
+                               FontSize="20"
+                               FontWeight="Bold"
+                               Foreground="Black"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
+                </Grid>
+            </Button>
+        </Grid>
 
-                <!-- Triggers plotting in PlotWindow.xaml.cs -->
-                <Button Content="Plot"
-                        Width="100"
-                        Margin="5,0"
-                        Click="PlotButton_Click"/>
+        <!-- ===================== MAIN CONTENT ===================== -->
+        <!-- Important: NO Center alignment here. Let it stretch naturally. -->
+        <Grid Margin="40">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <!-- Panels -->
+                <RowDefinition Height="20"/>
+                <!-- Spacer -->
+                <RowDefinition Height="*"/>
+                <!-- Plot area -->
+            </Grid.RowDefinitions>
 
-                <!-- Clears the current plot and input -->
-                <Button Content="Clear"
-                        Width="100"
-                        Margin="5,0"
-                        Click="ClearButton_Click"/>
+            <!-- ===================== TOP PANELS ===================== -->
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="40"/>
+                    <!-- spacer -->
+                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="40"/>
+                    <!-- spacer -->
+                    <ColumnDefinition Width="1*"/>
+                </Grid.ColumnDefinitions>
 
-                <!-- Opens a short help message explaining graph syntax -->
-                <Button Content="Help"
-                        Width="100"
-                        Margin="5,0"
-                        Click="HelpButton_Click"/>
-            </StackPanel>
-        </StackPanel>
+                <!-- ======== LEFT: CURRENT VARIABLES ======== -->
+                <StackPanel Grid.Column="0"
+                            VerticalAlignment="Top"
+                            HorizontalAlignment="Stretch">
 
-        <!-- ===================== PLOT AREA ===================== -->
-        <!--
-            The border provides a visible frame around the plot.
-            All drawing happens on the Canvas inside this border.
-        -->
-        <Border Grid.Row="2"
-                Margin="20"
-                BorderBrush="Gray"
-                BorderThickness="1">
+                    <TextBlock Text="Current Variables:"
+                               FontSize="18"
+                               FontFamily="Courier New"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,6"
+                               HorizontalAlignment="Left"/>
 
-            <!--
-                Canvas used for rendering:
-                  - axes,
-                  - tick marks and numeric labels,
-                  - and the function curve itself.
+                    <TextBox x:Name="VariablesBox"
+                             Height="120"
+                             FontSize="18"
+                             FontFamily="Courier New"
+                             TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto"
+                             IsReadOnly="True"
+                             Background="#FFEFEFEF"
+                             BorderBrush="Black"
+                             BorderThickness="1.5"
+                             Padding="6"
+                             HorizontalAlignment="Stretch"/>
+                </StackPanel>
 
-                Nothing is drawn here directly in XAML;
-                everything is drawn programmatically in PlotWindow.xaml.cs.
-            -->
-            <Canvas x:Name="PlotCanvas"
-                    Background="White"/>
-        </Border>
+                <!-- ======== MIDDLE: ENTER EXPRESSION ======== -->
+                <StackPanel Grid.Column="2"
+                            VerticalAlignment="Top"
+                            HorizontalAlignment="Stretch">
 
-    </Grid>
+                    <TextBlock Text="Enter expression:"
+                               FontFamily="Courier New"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,20"
+                               HorizontalAlignment="Center"/>
+
+                    <TextBox x:Name="FunctionTextBox"
+                             Height="28"
+                             FontFamily="Courier New"
+                             FontSize="14"
+                             TextAlignment="Left"
+                             HorizontalAlignment="Stretch"/>
+
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Center"
+                                Margin="0,10,0,0">
+
+                        <Button Content="Plot"
+                                FontSize="14"
+                                FontFamily="Courier New"
+                                FontWeight="SemiBold"
+                                Width="110"
+                                Height="40"
+                                Margin="0,0,20,0"
+                                Padding="8,4"
+                                Click="PlotButton_Click"/>
+
+                        <Button Content="Clear"
+                                FontSize="14"
+                                FontFamily="Courier New"
+                                FontWeight="SemiBold"
+                                Width="110"
+                                Height="40"
+                                Padding="8,4"
+                                Click="ClearButton_Click"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- ======== RIGHT: ERRORS ======== -->
+                <StackPanel Grid.Column="4"
+                            VerticalAlignment="Top"
+                            HorizontalAlignment="Stretch">
+
+                    <TextBlock Text="Errors:"
+                               FontSize="18"
+                               FontFamily="Courier New"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,6"
+                               HorizontalAlignment="Left"/>
+
+                    <Border Height="120"
+                            Background="#FFF5EAEA"
+                            BorderBrush="Red"
+                            BorderThickness="1.5"
+                            HorizontalAlignment="Stretch">
+
+                        <Grid>
+                            <TextBlock Text=">"
+                                       FontSize="14"
+                                       FontFamily="Courier New"
+                                       VerticalAlignment="Top"
+                                       HorizontalAlignment="Left"
+                                       Margin="6,6,0,0"/>
+
+                            <TextBox x:Name="ErrorBox"
+                                     Margin="20,0,0,0"
+                                     FontSize="18"
+                                     FontFamily="Courier New"
+                                     TextWrapping="Wrap"
+                                     VerticalScrollBarVisibility="Auto"
+                                     IsReadOnly="True"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     TextAlignment="Left"
+                                     VerticalContentAlignment="Top"
+                                     Padding="0,6,6,6"
+                                     HorizontalAlignment="Stretch"/>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Grid>
+
+            <!-- ===================== PLOT CANVAS ===================== -->
+            <Border Grid.Row="2"
+                    BorderBrush="Black"
+                    BorderThickness="1"
+                    CornerRadius="4">
+
+                <Canvas x:Name="PlotCanvas"
+                        Background="White"/>
+            </Border>
+        </Grid>
+    </DockPanel>
 </Window>
