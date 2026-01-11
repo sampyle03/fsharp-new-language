@@ -1,4 +1,4 @@
-﻿/*
+/*
 * MainWindow.xaml.cs
 * ------------------
 * This file controls the main Numera application window.

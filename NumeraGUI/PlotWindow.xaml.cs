@@ -13,7 +13,7 @@
 *
 * Smooth curve fitting (spline interpolation):
 * The curve is rendered using cubic spline interpolation based on the approach
-* described by Scott W. Harden (Jan 22, 2022), which adapts original work by
+* by Scott W. Harden (Jan 22, 2022), which adapts original work by
 * Ryan Seghers. See:
 * https://swharden.com/blog/2022-01-22-spline-interpolation/
 */
@@ -471,7 +471,7 @@ namespace NumeraGUI
                 ys.Add(cy);
             }
 
-            // If we have too few points for interpolation, fall back to a normal polyline.
+            // If too few points for interpolation, fall back to a normal polyline.
             if (xs.Count < 3)
             {
                 var fallback = new Polyline { Stroke = Brushes.Blue, StrokeThickness = 2 };
