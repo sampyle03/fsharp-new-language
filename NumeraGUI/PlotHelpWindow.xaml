@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Numera Plot Help"
-        Height="400"
+        Height="450"
         Width="600"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize">
@@ -36,7 +36,7 @@
                        FontFamily="Courier New"
                        FontSize="16"
                        TextWrapping="Wrap"
-                       Text=" Enter an expression in the input box using the format:&#x0a;&#x0a;graph x = expression, (x_min, x_max); &#x0a;&#x0a; For example: graph x = a*x + b, (-10, 10);&#x0a;(where a and b have previosuly been defined)&#x0a;&#x0a;Click the 'Plot' button.&#x0a;&#x0a;Then your plot will appear in the space below!&#x0a;&#x0a;Use the 'Clear' button for a clean plot.">
+                       Text=" Enter an expression in the input box using the format:&#x0a;&#x0a;graph y = expression, (x_min, x_max, optional step); &#x0a;&#x0a; For example: graph y = a*x + b, (-10, 10, 5);&#x0a;(where a and b have previosuly been defined)&#x0a;&#x0a; If no step is defined then the default of 200 will be used.&#x0a;&#x0a;Click the 'Plot' button.&#x0a;&#x0a;Then your plot will appear in the space below!&#x0a;&#x0a;Use the 'Clear' button for a clean plot.">
 
             </TextBlock>
         </ScrollViewer>

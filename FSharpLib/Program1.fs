@@ -862,10 +862,11 @@ module Interpreter =
 
     /// Parse a graph command like:
     ///   graph y = x^2, (-10, 10);
+    ///   graph y = x^2, (-10, 10, 0.1);
     ///   graphdif y = sin(x), (-5, 5);
     ///   graphint y = x^3, (-2, 2);
     ///   findroot y = x^2 - 4, (-10, 10);
-    /// into (variable name, expression string, xmin, xmax)
+    /// into (mode, variable name, expression string, xmin, xmax, dx option)
     let private parseGraphCommand (input : string) =
         let trimmed =
             input.Trim()
@@ -877,52 +878,70 @@ module Interpreter =
             |> fun s -> s.ToLowerInvariant()
 
         if not (firstWord = "graph" || firstWord = "graphdif" || firstWord = "graphint" || firstWord = "findroot") then
-            failwith "Plot command must start with 'graph', 'graphdif', 'graphint', or 'findroot'. Example: graph x = x^2, (-10, 10);"
+            failwith "Plot command must start with 'graph', 'graphdif', 'graphint', or 'findroot'. Example: graph y= x^2, (-10, 10);"
 
         // Drop the keyword
-        let afterKeyword = trimmed.Substring(firstWord.Length).Trim()    // e.g. "y = x^2, (-10, 10)"
+        let afterKeyword = trimmed.Substring(firstWord.Length).Trim()
 
-        // Split at the first comma: left is "y = x^2", right is "(-10, 10)"
+        // Split at the first comma: left is "y = x^2", right is "(-10, 10)" (or "(-10, 10, 0.1)")
         let commaIndex = afterKeyword.IndexOf(',')
+
+        let parseDouble (s : string) =
+            System.Double.Parse(s.Trim(), Globalization.CultureInfo.InvariantCulture)
+
         if commaIndex < 0 then
-            // allow missing explicit range (defaults in GetPointsForExpression)
+            // Allow missing explicit range (defaults)
             let exprPart = afterKeyword.Trim()
             let equalsIndex = exprPart.IndexOf('=')
-            if equalsIndex < 0 then failwith "Graph command must be of the form: graph x = expression, (min, max);"
+            if equalsIndex < 0 then
+                failwith "Graph command must be of the form: graph y= expression, (min, max);"
+
             let varName    = exprPart.Substring(0, equalsIndex).Trim()
             let exprString = exprPart.Substring(equalsIndex + 1).Trim()
-            // default range
-            firstWord, varName, exprString, -10.0, 10.0
+
+            // Default range and no dx
+            (firstWord, varName, exprString, -10.0, 10.0, None)
+
         else
-            let exprPart  = afterKeyword.Substring(0, commaIndex).Trim()   // "y = x^2"
-            let rangePart = afterKeyword.Substring(commaIndex + 1).Trim()  // "(-10, 10)"
+            let exprPart  = afterKeyword.Substring(0, commaIndex).Trim()
+            let rangePart = afterKeyword.Substring(commaIndex + 1).Trim()
 
-            // Extract variable name and expression from "x = x^2"
             let equalsIndex = exprPart.IndexOf('=')
-            if equalsIndex < 0 then failwith "Graph command must be of the form: graph y = expression, (min, max);"
+            if equalsIndex < 0 then
+                failwith "Graph command must be of the form: graph y = expression, (min, max);"
 
-            let varName    = exprPart.Substring(0, equalsIndex).Trim()       // "x"
-            let exprString = exprPart.Substring(equalsIndex + 1).Trim()      // "x^2"
+            let varName    = exprPart.Substring(0, equalsIndex).Trim()
+            let exprString = exprPart.Substring(equalsIndex + 1).Trim()
 
-            if String.IsNullOrWhiteSpace(varName) then failwith "Graph command must specify a variable name, e.g. graph y = x^2, (-10, 10);"
+            if String.IsNullOrWhiteSpace(varName) then
+                failwith "Graph command must specify a variable name, e.g. graph y = x^2, (-10, 10);"
 
-            // Parse range "(min, max)"
-            if not (rangePart.StartsWith("(") && rangePart.EndsWith(")")) then failwith "Range must be in the form (min, max), e.g. (-10, 10)."
+            if not (rangePart.StartsWith("(") && rangePart.EndsWith(")")) then
+                failwith "Range must be in the form (min, max) or (min, max, dx)."
 
-            let rangeClean = rangePart.TrimStart('(').TrimEnd(')').Trim() // "-10, 10"
+            let rangeClean = rangePart.TrimStart('(').TrimEnd(')').Trim()
 
-            let parts = rangeClean.Split([|','|], StringSplitOptions.RemoveEmptyEntries)
+            let parts =
+                rangeClean.Split([|','|], StringSplitOptions.RemoveEmptyEntries)
+                |> Array.map (fun s -> s.Trim())
 
-            if parts.Length <> 2 then failwith "Range must contain exactly two values: (min, max)."
-
-            let parseDouble (s : string) = System.Double.Parse(s.Trim(), Globalization.CultureInfo.InvariantCulture)
+            if parts.Length <> 2 && parts.Length <> 3 then
+                failwith "Range must contain (min, max) or (min, max, dx)."
 
             let xmin = parseDouble parts.[0]
             let xmax = parseDouble parts.[1]
-
             if xmin >= xmax then failwith "Range must satisfy min < max."
 
-            (firstWord, varName, exprString, xmin, xmax)
+            let dxOpt =
+                if parts.Length = 3 then
+                    let dx = parseDouble parts.[2]
+                    if dx <= 0.0 then failwith "Step size dx must be > 0."
+                    Some dx
+                else
+                    None
+
+            (firstWord, varName, exprString, xmin, xmax, dxOpt)
+
 
 
     /// Evaluate an expression string with a particular variable bound to x.
@@ -958,31 +977,51 @@ module Interpreter =
 
     /// Public function for the WPF plot window.
     /// Expects the full 'graph' command as typed in the GUI, e.g.:
-    ///   graph x = x^2, (-10, 10);
+    ///   graph y = x^2, (-10, 10);
+    ///   graph y = x^2, (-10, 10, 0.1);
     /// Returns a list of (x, y) points sampling the function over [xmin, xmax].
+    /// If dx is included in the range, it uses dx; otherwise uses auto sampling.
     let GetPointsForExpression (input : string) : (float * float) list =
-        let mode, varName, exprString, xmin, xmax = parseGraphCommand input
+        let mode, varName, exprString, xmin, xmax, dxOpt = parseGraphCommand input
 
-        // Number of samples between xmin and xmax
-        let steps = 200
-        let step  = (xmax - xmin) / float steps
+        // Safety cap so extremely small dx cannot freeze the UI
+        let maxPoints = 5000
 
         let evalAt x =
             try evalExpressionWithVar varName exprString x
             with _ -> nan
 
+        // Build x samples once (used by graph / dif / int)
+        let xs : float[] =
+            match dxOpt with
+            | Some dx ->
+                let span = xmax - xmin
+                let rawCount = int (ceil (span / dx)) + 1
+                let count = min rawCount maxPoints
+                let effectiveDx = span / float (count - 1)
+                Array.init count (fun i -> xmin + float i * effectiveDx)
+
+            | None ->
+                // Original behaviour
+                let steps = 200
+                let step  = (xmax - xmin) / float steps
+                Array.init (steps + 1) (fun i -> xmin + float i * step)
+
         match mode with
         | "graph" ->
-            [ for i in 0 .. steps ->
-                let x = xmin + float i * step
+            [ for x in xs ->
                 let y = evalAt x
                 (x, y) ]
 
         | "graphdif" ->
             // central difference
-            let h = (xmax - xmin) / float steps / 1000.0 |> max 1e-6
-            [ for i in 0 .. steps ->
-                let x = xmin + float i * step
+            // choose h relative to sampling resolution
+            let span = xmax - xmin
+            let approxStep =
+                if xs.Length > 1 then xs[1] - xs[0] else span / 200.0
+            let h = max 1e-6 (approxStep / 1000.0)
+
+            [ for x in xs ->
                 let yPlus = evalAt (x + h)
                 let yMinus = evalAt (x - h)
                 let deriv =
@@ -992,76 +1031,64 @@ module Interpreter =
                 (x, deriv) ]
 
         | "graphint" ->
-            // Uses the trapezoidal rule
-            [ for sampleIndex in 0 .. steps ->
-                let currentX = xmin + float sampleIndex * step
+            // Cumulative trapezoidal rule from xmin to each x in xs
+            if xs.Length = 0 then
+                []
+            else
+                let ys = xs |> Array.map evalAt
 
-                // Number of subintervals used for numerical integration
-                let subIntervals = 200
-                let integrationStartX = xmin
-                let integrationEndX = currentX
-                let deltaX =
-                    if subIntervals = 0 then 0.0
-                    else (integrationEndX - integrationStartX) / float subIntervals
+                let results = Array.zeroCreate<float * float> xs.Length
+                results[0] <- (xs[0], 0.0)
 
-                // Trapezoidal integration
-                let rec integrateSubIntervals (currentSubIntervalIndex : int) (accumulatedArea : float) =
-                    if currentSubIntervalIndex > subIntervals then accumulatedArea
+                let mutable acc = 0.0
+                for i in 1 .. xs.Length - 1 do
+                    let x0 = xs[i - 1]
+                    let x1 = xs[i]
+                    let y0 = ys[i - 1]
+                    let y1 = ys[i]
+                    let dx = x1 - x0
+
+                    if System.Double.IsNaN(y0) || System.Double.IsNaN(y1) then
+                        acc <- nan
                     else
-                        let evaluationX = integrationStartX + float currentSubIntervalIndex * deltaX
-                        let functionValueAtX = evalAt evaluationX
+                        acc <- acc + 0.5 * (y0 + y1) * dx
 
-                        let trapezoidWeight =
-                            if currentSubIntervalIndex = 0 || currentSubIntervalIndex = subIntervals then 0.5
-                            else 1.0
+                    results[i] <- (x1, acc)
 
-                        integrateSubIntervals (currentSubIntervalIndex + 1) (accumulatedArea + trapezoidWeight * functionValueAtX)
-
-                // Final integral value for this x
-                let integratedValue =
-                    if System.Double.IsNaN integrationStartX || System.Double.IsNaN integrationEndX then nan
-                    else deltaX * integrateSubIntervals 0 0.0
-
-                (currentX, integratedValue) ]
-
+                results |> Array.toList
 
         | "findroot" ->
-            // Newton-Raphson with fallback to bisection if derivative is zero
+            // Newton-Raphson with numerical derivative
             let initialGuess = (xmin + xmax) / 2.0
             let tolerance = 1e-10
             let maxIterations = 100
-    
-            let evalAt x =
-                try evalExpressionWithVar varName exprString x
-                with _ -> nan
-    
-            // 
+
             let derivativeAt x =
                 let delta = 1e-6
                 let yPlus = evalAt (x + delta)
                 let yMinus = evalAt (x - delta)
                 if System.Double.IsNaN(yPlus) || System.Double.IsNaN(yMinus) then nan
                 else (yPlus - yMinus) / (2.0 * delta)
-    
-            // Newton-Raphson iteration
+
             let rec newtonIteration x count =
                 if count >= maxIterations then None
                 else
                     let currentVal = evalAt x
                     let derivVal = derivativeAt x
-            
+
                     if System.Double.IsNaN(currentVal) || System.Double.IsNaN(derivVal) then None
-                    elif abs derivVal < 1e-12 then None  // Derivative too small
+                    elif abs derivVal < 1e-12 then None
                     else
                         let xNext = x - currentVal / derivVal
                         if abs (xNext - x) < tolerance then Some xNext
                         else newtonIteration xNext (count + 1)
-    
+
             let root =
                 match newtonIteration initialGuess 0 with
                 | Some r -> r
                 | None -> failwith "Newton-Raphson failed"
-    
+
             [ (root, 0.0) ]
 
-        | _ -> failwith "Unknown graph mode"
+        | _ ->
+            failwith "Unknown graph mode"
