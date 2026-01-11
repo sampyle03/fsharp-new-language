@@ -878,7 +878,7 @@ module Interpreter =
             |> fun s -> s.ToLowerInvariant()
 
         if not (firstWord = "graph" || firstWord = "graphdif" || firstWord = "graphint" || firstWord = "findroot") then
-            failwith "Plot command must start with 'graph', 'graphdif', 'graphint', or 'findroot'. Example: graph x = x^2, (-10, 10);"
+            failwith "Plot command must start with 'graph', 'graphdif', 'graphint', or 'findroot'. Example: graph y= x^2, (-10, 10);"
 
         // Drop the keyword
         let afterKeyword = trimmed.Substring(firstWord.Length).Trim()
@@ -894,7 +894,7 @@ module Interpreter =
             let exprPart = afterKeyword.Trim()
             let equalsIndex = exprPart.IndexOf('=')
             if equalsIndex < 0 then
-                failwith "Graph command must be of the form: graph x = expression, (min, max);"
+                failwith "Graph command must be of the form: graph y= expression, (min, max);"
 
             let varName    = exprPart.Substring(0, equalsIndex).Trim()
             let exprString = exprPart.Substring(equalsIndex + 1).Trim()
@@ -976,27 +976,22 @@ module Interpreter =
 
 
     /// Public function for the WPF plot window.
-    /// Expects the full command as typed in the GUI, e.g.:
-    ///   graph x = x^2, (-10, 10);
-    ///   graph x = x^2, (-10, 10, 0.1);
-    ///   graphdif x = sin(x), (-5, 5);
-    ///   graphint x = x^3, (-2, 2);
-    ///   findroot x = x^2 - 4, (-10, 10);
-    ///
-    /// Returns list of (x, y) points.
+    /// Expects the full 'graph' command as typed in the GUI, e.g.:
+    ///   graph y = x^2, (-10, 10);
+    ///   graph y = x^2, (-10, 10, 0.1);
+    /// Returns a list of (x, y) points sampling the function over [xmin, xmax].
     /// If dx is included in the range, it uses dx; otherwise uses auto sampling.
     let GetPointsForExpression (input : string) : (float * float) list =
         let mode, varName, exprString, xmin, xmax, dxOpt = parseGraphCommand input
 
-        // Avoid freezing the UI if the user picks a tiny dx
+        // Safety cap so extremely small dx cannot freeze the UI
         let maxPoints = 5000
 
-        // Safe evaluation wrapper: return NaN on errors
-        let evalAt (x: float) =
+        let evalAt x =
             try evalExpressionWithVar varName exprString x
             with _ -> nan
 
-        // Build the x-samples once (used by graph / graphdif / graphint)
+        // Build x samples once (used by graph / dif / int)
         let xs : float[] =
             match dxOpt with
             | Some dx ->
@@ -1007,43 +1002,43 @@ module Interpreter =
                 Array.init count (fun i -> xmin + float i * effectiveDx)
 
             | None ->
+                // Original behaviour
                 let steps = 200
-                let step = (xmax - xmin) / float steps
+                let step  = (xmax - xmin) / float steps
                 Array.init (steps + 1) (fun i -> xmin + float i * step)
 
         match mode with
         | "graph" ->
-            xs |> Array.map (fun x -> (x, evalAt x)) |> Array.toList
+            [ for x in xs ->
+                let y = evalAt x
+                (x, y) ]
 
         | "graphdif" ->
-            // Central difference derivative: f'(x) ≈ (f(x+h) - f(x-h)) / (2h)
-            // Choose h relative to domain size and sample density
+            // central difference
+            // choose h relative to sampling resolution
             let span = xmax - xmin
-            let h =
-                let approxStep =
-                    if xs.Length > 1 then xs[1] - xs[0] else span / 200.0
-                max 1e-6 (approxStep / 1000.0)
+            let approxStep =
+                if xs.Length > 1 then xs[1] - xs[0] else span / 200.0
+            let h = max 1e-6 (approxStep / 1000.0)
 
-            xs
-            |> Array.map (fun x ->
+            [ for x in xs ->
                 let yPlus = evalAt (x + h)
                 let yMinus = evalAt (x - h)
                 let deriv =
-                    if Double.IsNaN(yPlus) || Double.IsNaN(yMinus) then nan
+                    if System.Double.IsNaN(yPlus) || System.Double.IsNaN(yMinus)
+                    then nan
                     else (yPlus - yMinus) / (2.0 * h)
-                (x, deriv))
-            |> Array.toList
+                (x, deriv) ]
 
         | "graphint" ->
-            // Cumulative trapezoidal integral from xmin to x:
-            // I(x_k) = sum_{i=1..k} (f(x_i)+f(x_{i-1})) / 2 * (x_i - x_{i-1})
+            // Cumulative trapezoidal rule from xmin to each x in xs
             if xs.Length = 0 then
                 []
             else
                 let ys = xs |> Array.map evalAt
 
-                let out = Array.zeroCreate<float * float> xs.Length
-                out[0] <- (xs[0], 0.0)
+                let results = Array.zeroCreate<float * float> xs.Length
+                results[0] <- (xs[0], 0.0)
 
                 let mutable acc = 0.0
                 for i in 1 .. xs.Length - 1 do
@@ -1053,18 +1048,17 @@ module Interpreter =
                     let y1 = ys[i]
                     let dx = x1 - x0
 
-                    // If evaluation produced NaN, propagate NaN for this segment
-                    if Double.IsNaN(y0) || Double.IsNaN(y1) then
+                    if System.Double.IsNaN(y0) || System.Double.IsNaN(y1) then
                         acc <- nan
                     else
                         acc <- acc + 0.5 * (y0 + y1) * dx
 
-                    out[i] <- (x1, acc)
+                    results[i] <- (x1, acc)
 
-                out |> Array.toList
+                results |> Array.toList
 
         | "findroot" ->
-            // Newton-Raphson (with numerical derivative)
+            // Newton-Raphson with numerical derivative
             let initialGuess = (xmin + xmax) / 2.0
             let tolerance = 1e-10
             let maxIterations = 100
@@ -1073,25 +1067,28 @@ module Interpreter =
                 let delta = 1e-6
                 let yPlus = evalAt (x + delta)
                 let yMinus = evalAt (x - delta)
-                if Double.IsNaN(yPlus) || Double.IsNaN(yMinus) then nan
+                if System.Double.IsNaN(yPlus) || System.Double.IsNaN(yMinus) then nan
                 else (yPlus - yMinus) / (2.0 * delta)
 
-            let rec newtonIteration x iter =
-                if iter >= maxIterations then None
+            let rec newtonIteration x count =
+                if count >= maxIterations then None
                 else
-                    let fx = evalAt x
-                    let dfx = derivativeAt x
+                    let currentVal = evalAt x
+                    let derivVal = derivativeAt x
 
-                    if Double.IsNaN(fx) || Double.IsNaN(dfx) then None
-                    elif abs dfx < 1e-12 then None
+                    if System.Double.IsNaN(currentVal) || System.Double.IsNaN(derivVal) then None
+                    elif abs derivVal < 1e-12 then None
                     else
-                        let xNext = x - fx / dfx
+                        let xNext = x - currentVal / derivVal
                         if abs (xNext - x) < tolerance then Some xNext
-                        else newtonIteration xNext (iter + 1)
+                        else newtonIteration xNext (count + 1)
 
-            match newtonIteration initialGuess 0 with
-            | Some root -> [ (root, 0.0) ]
-            | None -> failwith "Newton-Raphson failed"
+            let root =
+                match newtonIteration initialGuess 0 with
+                | Some r -> r
+                | None -> failwith "Newton-Raphson failed"
+
+            [ (root, 0.0) ]
 
         | _ ->
             failwith "Unknown graph mode"
