@@ -25,24 +25,8 @@
             <TextBlock Text="Numera - Plotting"
                        FontSize="30"
                        FontWeight="Bold"
-                       HorizontalAlignment="Center"/>
-        </Border>
-
-        <!-- ===================== CONTROLS ===================== -->
-        <!--
-            This section contains:
-              - the graph input box,
-              - the Plot button,
-              - a Clear button,
-              - and a Help button.
-        -->
-        <StackPanel Grid.Row="1"
-                    Margin="0,20"
-                    HorizontalAlignment="Center">
-
-            <!-- Label describing the expected input -->
-            <TextBlock Text="Enter expression"
-                       Margin="0,0,0,5"
+                       FontFamily="Courier New"
+                       VerticalAlignment="Center"
                        HorizontalAlignment="Center"/>
 
             <Button x:Name="HelpButton"
