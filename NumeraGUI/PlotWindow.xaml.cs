@@ -23,6 +23,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
@@ -36,15 +37,40 @@ namespace NumeraGUI
         private const double PlotPaddingTop = 20;
         private const double PlotPaddingBottom = 40;
 
+        // Zoom limits for the "camera" view
+        private const double MinZoom = 0.2;
+        private const double MaxZoom = 20.0;
+        private const double ZoomStep = 1.10; // 10% per wheel notch
+
         // Stores the current set of points being plotted (world coordinates)
         private readonly List<Point> _points = new List<Point>();
 
-        // World-coordinate bounds used to scale the plot.
-        // These are automatically updated to fit the current data.
+        // World-coordinate bounds representing the CURRENT visible window.
+        // These are updated dynamically when the user pans/zooms.
         private double _worldMinX = -10.0;
         private double _worldMaxX = 10.0;
         private double _worldMinY = -10.0;
         private double _worldMaxY = 10.0;
+
+        // "Fit" bounds are the bounds computed from the data once (with padding).
+        // These are used as the base extents for the camera's zoom scaling.
+        private double _fitMinX = -10.0;
+        private double _fitMaxX = 10.0;
+        private double _fitMinY = -10.0;
+        private double _fitMaxY = 10.0;
+
+        // Camera / view state:
+        // - view center is in world coordinates
+        // - view scale is relative to the fit window (1.0 = fitted)
+        private double _viewCenterX = 0.0;
+        private double _viewCenterY = 0.0;
+        private double _viewScale = 1.0;
+
+        // Pan state
+        private bool _isPanning = false;
+        private Point _panStartMouse;
+        private double _panStartCenterX;
+        private double _panStartCenterY;
 
         // Delegate that is set by MainWindow.
         // Given a graph command string, this returns a list of points from F#.
@@ -63,13 +89,66 @@ namespace NumeraGUI
 
         /// <summary>
         /// Utility function to clamp a value between a minimum and maximum.
-        /// This is mainly used to keep labels inside the canvas bounds.
         /// </summary>
         private static double Clamp(double v, double min, double max)
         {
             if (v < min) return min;
             if (v > max) return max;
             return v;
+        }
+
+        /// <summary>
+        /// Reset the camera back to the fitted view (centered and scale 1.0).
+        /// </summary>
+        private void ResetViewToFit()
+        {
+            _viewScale = 1.0;
+            _viewCenterX = (_fitMinX + _fitMaxX) / 2.0;
+            _viewCenterY = (_fitMinY + _fitMaxY) / 2.0;
+
+            ApplyViewToWorldBounds();
+        }
+
+        /// <summary>
+        ///  Recentres the view on the fitted data bounds so the plotted curve
+        ///     always fills the canvas regardless of zoom level.
+        /// </summary>
+        private void FitViewToData()
+        {
+            if (_points.Count == 0)
+                return;
+
+            _viewCenterX = (_fitMinX + _fitMaxX) / 2.0;
+            _viewCenterY = (_fitMinY + _fitMaxY) / 2.0;
+
+            ApplyViewToWorldBounds();
+        }
+
+        /// <summary>
+        /// Update _worldMin/_worldMax from the current camera state.
+        /// The visible span is the fit span divided by zoom scale.
+        /// </summary>
+        private void ApplyViewToWorldBounds()
+        {
+            double fitSpanX = _fitMaxX - _fitMinX;
+            double fitSpanY = _fitMaxY - _fitMinY;
+
+            if (fitSpanX <= 0 || fitSpanY <= 0)
+            {
+                _worldMinX = -10.0;
+                _worldMaxX = 10.0;
+                _worldMinY = -10.0;
+                _worldMaxY = 10.0;
+                return;
+            }
+
+            double visibleSpanX = fitSpanX / _viewScale;
+            double visibleSpanY = fitSpanY / _viewScale;
+
+            _worldMinX = _viewCenterX - visibleSpanX / 2.0;
+            _worldMaxX = _viewCenterX + visibleSpanX / 2.0;
+            _worldMinY = _viewCenterY - visibleSpanY / 2.0;
+            _worldMaxY = _viewCenterY + visibleSpanY / 2.0;
         }
 
         /// <summary>
@@ -88,7 +167,6 @@ namespace NumeraGUI
         /// </summary>
         private void PlotButton_Click(object sender, RoutedEventArgs e)
         {
-            // If the F# delegate has not been wired up, do nothing
             if (GetPointsForExpression == null)
                 return;
 
@@ -131,15 +209,127 @@ namespace NumeraGUI
         /// </summary>
         private void ClearButton_Click(object sender, RoutedEventArgs e)
         {
-            // Clear plotted data
             _points.Clear();
-
-            // Clear anything drawn on the canvas
             PlotCanvas.Children.Clear();
-
-            // Clear the input expression box
             FunctionTextBox.Clear();
+
+            // Reset to defaults
+            _fitMinX = -10.0;
+            _fitMaxX = 10.0;
+            _fitMinY = -10.0;
+            _fitMaxY = 10.0;
+
+            ResetViewToFit();
+            DrawPlot();
         }
+
+        // ===================== CAMERA-BASED ZOOM & PAN =====================
+
+        /// <summary>
+        /// Mouse wheel zooms in/out around the mouse pointer position.
+        /// This keeps the point under the cursor stable while zooming by updating the camera.
+        /// </summary>
+        private void PlotCanvas_MouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (PlotCanvas == null || _points.Count == 0)
+                return;
+
+            double zoom = (e.Delta > 0) ? ZoomStep : (1.0 / ZoomStep);
+            _viewScale = Clamp(_viewScale * zoom, MinZoom, MaxZoom);
+
+            // Always refit the view so the line fills the canvas
+            FitViewToData();
+            DrawPlot();
+
+            e.Handled = true;
+        }
+
+
+        /// <summary>
+        /// Start panning (left mouse drag).
+        /// </summary>
+        private void PlotCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (PlotCanvas == null || _points.Count == 0)
+                return;
+
+            PlotCanvas.Focus();
+
+            _isPanning = true;
+            _panStartMouse = e.GetPosition(PlotCanvas);
+            _panStartCenterX = _viewCenterX;
+            _panStartCenterY = _viewCenterY;
+            
+            PlotCanvas.CaptureMouse();
+            PlotCanvas.Cursor = Cursors.Hand;
+            e.Handled = true;
+        }
+
+        /// <summary>
+        /// Stop panning.
+        /// </summary>
+        private void PlotCanvas_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (!_isPanning)
+                return;
+
+            _isPanning = false;
+            PlotCanvas.ReleaseMouseCapture();
+            PlotCanvas.Cursor = Cursors.Arrow;
+            e.Handled = true;
+        }
+
+        /// <summary>
+        /// Update camera center while dragging to pan.
+        /// </summary>
+        private void PlotCanvas_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (!_isPanning || PlotCanvas == null)
+                return;
+
+            Point current = e.GetPosition(PlotCanvas);
+            Vector deltaPx = current - _panStartMouse;
+
+            double width = PlotCanvas.ActualWidth;
+            double height = PlotCanvas.ActualHeight;
+
+            double usableWidth = width - PlotPaddingLeft - PlotPaddingRight;
+            double usableHeight = height - PlotPaddingTop - PlotPaddingBottom;
+
+            double rangeX = _worldMaxX - _worldMinX;
+            double rangeY = _worldMaxY - _worldMinY;
+
+            if (usableWidth <= 0 || usableHeight <= 0 || rangeX <= 0 || rangeY <= 0)
+                return;
+
+            // Convert pixel delta to world delta based on current view window
+            double dxWorld = deltaPx.X * (rangeX / usableWidth);
+            double dyWorld = deltaPx.Y * (rangeY / usableHeight);
+
+            // "Grab and drag": move the camera opposite to the mouse drag
+            _viewCenterX = _panStartCenterX - dxWorld;
+            _viewCenterY = _panStartCenterY + dyWorld; // screen Y increases downward
+
+            ApplyViewToWorldBounds();
+            DrawPlot();
+
+            e.Handled = true;
+        }
+
+        /// <summary>
+        /// Right-click resets the view to the fitted data window.
+        /// </summary>
+        private void PlotCanvas_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (_points.Count == 0)
+                return;
+
+            ResetViewToFit();
+            DrawPlot();
+            e.Handled = true;
+        }
+
+        // ===================== EXISTING PLOTTING LOGIC =====================
 
         /// <summary>
         /// Replaces the current plot data with a new set of points,
@@ -159,18 +349,19 @@ namespace NumeraGUI
         }
 
         /// <summary>
-        /// Automatically adjusts the world-coordinate bounds
-        /// so that all points are visible with a small margin.
+        /// Automatically adjusts the fit bounds so that all points are visible with a small margin.
+        /// Then resets the camera to the fitted view.
         /// </summary>
         private void FitWorldToPoints()
         {
             if (_points.Count == 0)
             {
-                // Default bounds when nothing is plotted
-                _worldMinX = -10.0;
-                _worldMaxX = 10.0;
-                _worldMinY = -10.0;
-                _worldMaxY = 10.0;
+                _fitMinX = -10.0;
+                _fitMaxX = 10.0;
+                _fitMinY = -10.0;
+                _fitMaxY = 10.0;
+
+                ResetViewToFit();
                 return;
             }
 
@@ -196,16 +387,14 @@ namespace NumeraGUI
             double padX = (maxX - minX) * 0.10;
             double padY = (maxY - minY) * 0.10;
 
-            _worldMinX = minX - padX;
-            _worldMaxX = maxX + padX;
-            _worldMinY = minY - padY;
-            _worldMaxY = maxY + padY;
+            _fitMinX = minX - padX;
+            _fitMaxX = maxX + padX;
+            _fitMinY = minY - padY;
+            _fitMaxY = maxY + padY;
+
+            ResetViewToFit();
         }
 
-        /// <summary>
-        /// Draws tick marks and numeric labels along the x-axis.
-        /// Labels are positioned near the x-axis line where possible.
-        /// </summary>
         private void DrawXTicks(
             double width,
             double height,
@@ -215,7 +404,6 @@ namespace NumeraGUI
             const int tickCount = 10;
             double step = (_worldMaxX - _worldMinX) / tickCount;
 
-            // Determine where the x-axis is drawn on the canvas
             bool xAxisVisible = (_worldMinY <= 0 && 0 <= _worldMaxY);
             double yAxisLine = xAxisVisible ? toCanvasY(0) : toCanvasY(_worldMinY);
 
@@ -224,7 +412,6 @@ namespace NumeraGUI
                 double xValue = _worldMinX + i * step;
                 double x = toCanvasX(xValue);
 
-                // Tick mark
                 PlotCanvas.Children.Add(new Line
                 {
                     X1 = x,
@@ -235,7 +422,6 @@ namespace NumeraGUI
                     StrokeThickness = 1
                 });
 
-                // Numeric label
                 var label = new TextBlock
                 {
                     Text = xValue.ToString("0.##"),
@@ -255,10 +441,6 @@ namespace NumeraGUI
             }
         }
 
-        /// <summary>
-        /// Draws tick marks and numeric labels along the y-axis.
-        /// Labels are placed next to the y-axis line where possible.
-        /// </summary>
         private void DrawYTicks(
             double width,
             double height,
@@ -268,7 +450,6 @@ namespace NumeraGUI
             const int tickCount = 10;
             double step = (_worldMaxY - _worldMinY) / tickCount;
 
-            // Determine where the y-axis is drawn on the canvas
             bool yAxisVisible = (_worldMinX <= 0 && 0 <= _worldMaxX);
             double xAxisLine = yAxisVisible ? toCanvasX(0) : toCanvasX(_worldMinX);
 
@@ -277,7 +458,6 @@ namespace NumeraGUI
                 double yValue = _worldMinY + i * step;
                 double y = toCanvasY(yValue);
 
-                // Tick mark
                 PlotCanvas.Children.Add(new Line
                 {
                     X1 = xAxisLine - 5,
@@ -288,7 +468,6 @@ namespace NumeraGUI
                     StrokeThickness = 1
                 });
 
-                // Numeric label
                 var label = new TextBlock
                 {
                     Text = yValue.ToString("0.##"),
@@ -299,7 +478,6 @@ namespace NumeraGUI
                 double labelX = xAxisLine - (labelWidth + 8);
                 double labelY = y - 8;
 
-                // If the axis is too close to the left edge, move labels to the right
                 if (labelX < 0)
                 {
                     labelX = xAxisLine + 8;
@@ -314,10 +492,6 @@ namespace NumeraGUI
             }
         }
 
-        /// <summary>
-        /// Draws vertical grid lines aligned with the x-axis tick marks.
-        /// These lines run the full height of the usable plot area.
-        /// </summary>
         private void DrawVerticalGridLines(
             double width,
             double height,
@@ -345,10 +519,6 @@ namespace NumeraGUI
             }
         }
 
-        /// <summary>
-        /// Draws horizontal grid lines aligned with the y-axis tick marks.
-        /// These lines run the full width of the usable plot area.
-        /// </summary>
         private void DrawHorizontalGridLines(
             double width,
             double height,
@@ -376,10 +546,6 @@ namespace NumeraGUI
             }
         }
 
-        /// <summary>
-        /// Main drawing routine.
-        /// Clears the canvas, draws axes, ticks, and then renders the function curve.
-        /// </summary>
         private void DrawPlot()
         {
             if (PlotCanvas == null)
@@ -399,25 +565,21 @@ namespace NumeraGUI
             if (rangeX <= 0 || rangeY <= 0)
                 return;
 
-            // Work out how much space we actually have for the plot
             double usableWidth = width - PlotPaddingLeft - PlotPaddingRight;
             double usableHeight = height - PlotPaddingTop - PlotPaddingBottom;
 
             double scaleX = usableWidth / rangeX;
             double scaleY = usableHeight / rangeY;
 
-            // Convert world coordinates into canvas coordinates
             double ToCanvasX(double x) =>
                 PlotPaddingLeft + (x - _worldMinX) * scaleX;
 
             double ToCanvasY(double y) =>
                 PlotPaddingTop + usableHeight - (y - _worldMinY) * scaleY;
 
-            // Draw grid lines first so everything else appears on top
             DrawVerticalGridLines(width, height, ToCanvasX, ToCanvasY);
             DrawHorizontalGridLines(width, height, ToCanvasX, ToCanvasY);
 
-            // Draw y-axis (x = 0) if visible
             if (_worldMinX <= 0 && 0 <= _worldMaxX)
             {
                 double x0 = ToCanvasX(0);
@@ -433,7 +595,6 @@ namespace NumeraGUI
                 });
             }
 
-            // Draw x-axis (y = 0) if visible
             if (_worldMinY <= 0 && 0 <= _worldMaxY)
             {
                 double y0 = ToCanvasY(0);
@@ -449,12 +610,9 @@ namespace NumeraGUI
                 });
             }
 
-            // Draw tick marks and numeric labels
             DrawXTicks(width, height, ToCanvasX, ToCanvasY);
             DrawYTicks(width, height, ToCanvasX, ToCanvasY);
 
-            // ===================== SMOOTH CURVE (Spline Interpolation) =====================
-            // Convert points to canvas coordinates, skipping invalid points.
             var xs = new List<double>();
             var ys = new List<double>();
 
@@ -471,19 +629,19 @@ namespace NumeraGUI
                 ys.Add(cy);
             }
 
-            // If too few points for interpolation, fall back to a normal polyline.
             if (xs.Count < 3)
             {
-                var fallback = new Polyline { Stroke = Brushes.Blue, StrokeThickness = 2 };
+                var fallback = new Polyline { 
+                    Stroke = Brushes.Blue, 
+                    StrokeThickness = 2,
+                    Clip = new RectangleGeometry(new Rect(0, 0, width, height))
+                };
                 for (int i = 0; i < xs.Count; i++)
                     fallback.Points.Add(new Point(xs[i], ys[i]));
                 PlotCanvas.Children.Add(fallback);
                 return;
             }
 
-            // Choose a reasonable number of interpolated points:
-            // - at least 200 so it looks smooth
-            // - capped to avoid UI slowdown
             int interpCount = (int)Math.Max(200, Math.Min(5000, width));
 
             (double[] xsOut, double[] ysOut) = Cubic.InterpolateXY(xs.ToArray(), ys.ToArray(), interpCount);
@@ -491,7 +649,8 @@ namespace NumeraGUI
             var smooth = new Polyline
             {
                 Stroke = Brushes.Blue,
-                StrokeThickness = 2
+                StrokeThickness = 2,
+                Clip = new RectangleGeometry(new Rect(0, 0, width, height))
             };
 
             for (int i = 0; i < xsOut.Length; i++)
@@ -510,9 +669,6 @@ namespace NumeraGUI
     // =====================================================================
     public static class Cubic
     {
-        /// <summary>
-        /// Generate a smooth (interpolated) curve that follows the path of the given X/Y points.
-        /// </summary>
         public static (double[] xs, double[] ys) InterpolateXY(double[] xs, double[] ys, int count)
         {
             if (xs is null || ys is null || xs.Length != ys.Length)
@@ -520,7 +676,6 @@ namespace NumeraGUI
 
             int inputPointCount = xs.Length;
 
-            // Distances along the curve (arc-length parameterisation)
             double[] inputDistances = new double[inputPointCount];
             for (int i = 1; i < inputPointCount; i++)
             {
@@ -598,7 +753,6 @@ namespace NumeraGUI
             B[n - 1] = 2.0f * A[n - 1];
             r[n - 1] = 3 * (dy1 / (dx1 * dx1));
 
-            // Solve the tridiagonal system
             double[] cPrime = new double[n];
             cPrime[0] = C[0] / B[0];
             for (int i = 1; i < n; i++)

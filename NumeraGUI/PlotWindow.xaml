@@ -203,7 +203,13 @@
                     CornerRadius="4">
 
                 <Canvas x:Name="PlotCanvas"
-                        Background="White"/>
+                        Background="White"
+                        Focusable="True"
+                        MouseWheel="PlotCanvas_MouseWheel"
+                        MouseLeftButtonDown="PlotCanvas_MouseLeftButtonDown"
+                        MouseLeftButtonUp="PlotCanvas_MouseLeftButtonUp"
+                        MouseMove="PlotCanvas_MouseMove"
+                        MouseRightButtonDown="PlotCanvas_MouseRightButtonDown"/>
             </Border>
         </Grid>
     </DockPanel>
