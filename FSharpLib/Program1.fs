@@ -1,5 +1,5 @@
 // Simple Interpreter in F#
-// Author: R.J. Lapeer 
+// Author: R.J. Lapeer , Sam Pyle, Liberty Harrington
 // Date: 23/10/2022
 // Reference: Peter Sestoft, Grammars and parsing with F#, Tech. Report
 
@@ -204,37 +204,34 @@ module Numera =
             if declarationType <> BoolType then raise (System.Exception("Cannot assign boolean to non-bool"))
             (ValBool false, tail)
         | Identifier name :: tail ->
-            if Map.containsKey name !symbolTable then
-                let variableFound = (!symbolTable).[name].value
-                match variableFound with
-                | None -> raise (System.Exception("Variable used before initialisation"))
-                | Some value ->
-                    let (afterExpressionTail, floatValue) = evalExpression tokens
-                    match declarationType, value with
-                    | BoolType, ValBool foundBoolean -> (ValBool foundBoolean, tail)
-                    | BoolType, _ -> raise (System.Exception("Cannot assign non-bool to bool"))
-                    | (FloatType | IntType), _ ->
-                        let targetValue = floatToValType declarationType floatValue
-                        let confirmed = floatIntTypeCheck declarationType targetValue
-                        (confirmed, afterExpressionTail)
-                    | StringType, ValString foundString -> (ValString foundString, tail)
-                    | _, _ -> raise (System.Exception(sprintf "Type mismatch: declared %A but got %A" declarationType value))
-            else
-                raise (System.Exception("Undefined variable usage attempted"))
-        | _ -> 
-            let tokensForEval =
+            if name = "sin" || name = "cos" || name = "tan" || name = "exp" || name = "log" then
+                let (afterExpressionTail, floatValue) = evalExpression tokens
                 match declarationType with
-                | FloatType ->                            // if declared as float,
-                    tokens
-                    |> List.map (function                 // maps over tokens and converts them to floats (https://learn.microsoft.com/en-us/dotnet/fsharp/language-reference/lists)
-                        | NumInt n -> NumFloat (float n)
-                        | other    -> other)
-                | _ -> tokens
+                | BoolType -> raise (System.Exception("Cannot assign boolean to non-bool"))
+                | (FloatType | IntType) ->
+                    let targetValue = floatToValType declarationType floatValue
+                    let confirmed = floatIntTypeCheck declarationType targetValue
+                    (confirmed, afterExpressionTail)
+                | StringType -> raise (System.Exception("Cannot assign string to non-string"))
+                | _ -> raise (System.Exception("Unhandled declaration type"))
+            else
+                if Map.containsKey name !symbolTable then
+                    let variableFound = (!symbolTable).[name].value
+                    match variableFound with
+                    | None -> raise (System.Exception("Variable used before initialisation"))
+                    | Some value ->
+                        match declarationType, value with
+                        | BoolType, ValBool foundBoolean -> (ValBool foundBoolean, tail)
+                        | BoolType, _ -> raise (System.Exception("Cannot assign non-bool to bool"))
+                        | (FloatType | IntType), _ ->
+                            let confirmed = floatIntTypeCheck declarationType value
+                            (confirmed, tail)
+                        | StringType, ValString foundString -> (ValString foundString, tail)
+                        | _, _ ->
+                            raise (System.Exception(sprintf "Type mismatch: declared %A but got %A" declarationType value))
+                else
+                    raise (System.Exception("Undefined variable usage attempted"))
 
-            let (remaining, result) = evalExpression tokensForEval
-            let value = floatToValType declarationType result
-
-            (value, remaining)
 
     let add(x:int, y:int) : int = x + y
 
@@ -407,7 +404,7 @@ module Numera =
             | NumInt n :: tail -> (Number (float n), tail)
             | NumFloat n :: tail -> (Number (float n), tail)
             | Identifier name :: tail ->
-                if name = "sin" || name = "cos" || name = "tan" then
+                if name = "sin" || name = "cos" || name = "tan" || name = "log" || name = "exp" then
                     let (argAST, tailRest) = parseFactor tail
                     (FuncCall(name, argAST), tailRest)
                 else
@@ -517,94 +514,7 @@ module Numera =
                         popRestoreBinding varName prevVar
             sample 0 []
 
-        // differentiates a graph equation
-        and varGraphDifRHS (varName:string) (exprTokens:terminal list) (xMax:float) (yMax:float) : (Val * Val) list =
-            let numOfPoints = 100
-            let delta = 1e-6
-            let rec sample i acc =
-                if i >= numOfPoints then List.rev acc
-                else
-                    let x = -xMax + float (i + 1) * (2.0 * xMax) / float (numOfPoints + 1)
-                    let xValSymb =
-                        let j = int x
-                        if float j = x then ValInt j else ValFloat x
-
-                    let valueToBind =
-                        if float (int (x + delta)) = (x + delta) then
-                            ValInt (int (x + delta))
-                        else
-                            ValFloat (x + delta)
-                    let prevPlusVar = pushTempBinding varName valueToBind
-                    let prevPlusX   = pushTempBinding "x" valueToBind
-                    let yPlus =
-                        try
-                            let (_, v) = evalExpressionVal exprTokens
-                            valToFloat v
-                        finally
-                            popRestoreBinding "x" prevPlusX
-                            popRestoreBinding varName prevPlusVar
-                    let prevMinusVar = pushTempBinding varName (if float (int (x - delta)) = x - delta then ValInt (int (x - delta)) else ValFloat (x - delta))
-                    let prevMinusX = pushTempBinding "x" (if float (int (x - delta)) = x - delta then ValInt (int (x - delta)) else ValFloat (x - delta))
-                    let yMinus =
-                        try
-                            let (_, evalVal) = evalExpressionVal exprTokens
-                            valToFloat evalVal
-                        finally
-                            popRestoreBinding "x" prevMinusX
-                            popRestoreBinding varName prevMinusVar
-                    let deriv = (yPlus - yMinus) / (2.0 * delta)
-                    let yVal =
-                        if deriv = floor deriv then ValInt (int deriv) else ValFloat deriv
-                    if valToFloat yVal > -yMax && valToFloat yVal < yMax then
-                        sample (i + 1) ((xValSymb, yVal) :: acc)
-                    else
-                        sample (i + 1) acc
-            sample 0 []
-
-        and varGraphIntRHS (varName:string) (exprTokens:terminal list) (xmin:float) (xMax:float) (yMax:float) : (Val * Val) list =
-            let numOfPoints = 100
-            let nSub = 200
-            let makeValFromFloat (t:float) =
-                let rounded = System.Math.Round(t)
-                if System.Math.Abs(t - rounded) < 1e-12 then ValInt (int rounded)
-                else ValFloat t
-
-            let safeNSub = max 1 nSub
-            let rec sample i acc =
-                if i >= numOfPoints then List.rev acc
-                else
-                    let x = xmin + float (i + 1) * ( (xMax - xmin) / float (numOfPoints + 1) )
-                    let xValSymb = makeValFromFloat x
-
-                    let lowerLimit = xmin
-                    let upperLimit = x
-                    let dx = (upperLimit - lowerLimit) / float safeNSub
-
-                    let rec integrate stepIndex accInt =
-                        if stepIndex > safeNSub then accInt
-                        else
-                            let t = lowerLimit + float stepIndex * dx
-                            let prevVar = pushTempBinding varName (makeValFromFloat t)
-                            let prevX   = pushTempBinding "x" (makeValFromFloat t)
-                            let fval =
-                                try
-                                    let (_, v) = evalExpressionVal exprTokens
-                                    valToFloat v
-                                finally
-                                    popRestoreBinding "x" prevX
-                                    popRestoreBinding varName prevVar
-                            let weight = if stepIndex = 0 || stepIndex = safeNSub then 0.5 else 1.0
-                            integrate (stepIndex + 1) (accInt + weight * fval)
-
-                    let integral = dx * integrate 0 0.0
-                    let yVal = if integral = floor integral then ValInt (int integral) else ValFloat integral
-
-                    if valToFloat yVal > -yMax && valToFloat yVal < yMax then
-                        sample (i + 1) ((xValSymb, yVal) :: acc)
-                    else
-                        sample (i + 1) acc
-
-            sample 0 []
+        // differentiation and integration logic moved to Intepreter
 
         and evalStatement tokens =
             match tokens with
@@ -615,29 +525,6 @@ module Numera =
                     | Semicolon :: rest -> rest
                     | _ -> remainder
                 let pairs = varGraphRHS name exprTokens xMax yMax
-                Console.WriteLine("{0}", formatPairs pairs)
-                (restAfter, 0.0)
-            | GraphDif :: Identifier name :: Equals :: tail ->
-                let (exprTokens, xMax, yMax, remainder) = splitGraphTokens tail
-                let restAfter = 
-                    match remainder with
-                    | Semicolon :: rest -> rest
-                    | _ -> remainder
-                let pairs = varGraphDifRHS name exprTokens xMax yMax
-                Console.WriteLine("{0}", formatPairs pairs)
-                (restAfter, 0.0)
-            | GraphInt :: Identifier name :: Equals :: tail ->
-                // splitGraphTokens currently returns (exprTokens, xMax, yMax, remainder)
-                let (exprTokens, xMax, yMax, remainder) = splitGraphTokens tail
-                let restAfter =
-                    match remainder with
-                    | Semicolon :: rest -> rest
-                    | _ -> remainder
-
-                // Provide xmin first (here we use symmetric range -xMax..xMax to preserve old behaviour)
-                let xmin = -xMax
-                let pairs = varGraphIntRHS name exprTokens xmin xMax yMax
-
                 Console.WriteLine("{0}", formatPairs pairs)
                 (restAfter, 0.0)
             | Let :: TypeInt :: Identifier name :: Equals :: tail
@@ -659,7 +546,12 @@ module Numera =
                     declareVariable name declaredType valueVal
                     (restAfterSemi, valToFloat valueVal)
                 | _ -> raise (System.Exception("Missing semicolon in declaration"))
-            | _ -> evalExpressionFloat tokens
+            | _ ->
+                let (rem, valueFloat) = evalExpressionFloat tokens
+                match rem with
+                | Semicolon :: rest -> (rest, valueFloat)
+                | _ -> (rem, valueFloat)
+
 
         and evalExpressionFloat tokens =
             let (rem, v) = evalExpressionVal tokens
