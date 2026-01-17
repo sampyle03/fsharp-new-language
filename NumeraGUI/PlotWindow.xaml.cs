@@ -3,18 +3,22 @@
 * ------------------
 * This file is responsible for drawing function plots in the Numera GUI.
 *
-* The window receives a list of (x, y) points from the F# interpreter
-* (generated from a command such as: graph x = x^2, (-5, 5);),
+* The plot window receives a list of (x, y) points from the F# interpreter
+* (generated from a command such as: graph y = x^2, (-5, 5);),
 * and then:
-*  - automatically scales the axes to fit the data,
-*  - draws the x- and y-axes,
-*  - adds tick marks and numeric labels,
+*  - scales the axes to fit the data,
+*  - draws grid lines, axes, tick marks and labels,
 *  - and renders the function curve on a Canvas.
+*
+* Zoom/pan:
+* The plot uses a simple "camera" model (centre + scale). Panning moves the camera centre.
+* Zooming changes the camera scale, and we zoom around the mouse pointer so it feels natural.
+* When the user pans/zooms, we re-request fresh points from the F# backend for the currently
+* visible x-range. This makes the curve behave like it continues indefinitely.
 *
 * Smooth curve fitting (spline interpolation):
 * The curve is rendered using cubic spline interpolation based on the approach
-* by Scott W. Harden (Jan 22, 2022), which adapts original work by
-* Ryan Seghers. See:
+* by Scott W. Harden (Jan 22, 2022), which adapts original work by Ryan Seghers. See:
 * https://swharden.com/blog/2022-01-22-spline-interpolation/
 */
 
@@ -29,66 +33,101 @@ using System.Windows.Shapes;
 
 namespace NumeraGUI
 {
+    /// <summary>
+    /// PlotWindow is the WPF window responsible for plotting functions onto a Canvas.
+    /// It stores the plotted points in "world" coordinates, and uses a camera model
+    /// (centre + scale) to support pan and zoom.
+    /// </summary>
     public partial class PlotWindow : Window
     {
-        // Padding around the plot area so axis labels do not overlap the border
+        // ===================== Layout & Camera Constants =====================
+
+        // Padding around the plot area so axis labels do not overlap the border.
         private const double PlotPaddingLeft = 50;
         private const double PlotPaddingRight = 20;
         private const double PlotPaddingTop = 20;
         private const double PlotPaddingBottom = 40;
 
-        // Zoom limits for the "camera" view
+        // Zoom limits for the camera view.
         private const double MinZoom = 0.2;
         private const double MaxZoom = 20.0;
-        private const double ZoomStep = 1.10; // 10% per wheel notch
+        private const double ZoomStep = 1.10; // ~10% per wheel notch
 
-        // Stores the current set of points being plotted (world coordinates)
+        // ===================== Plot Data & Backend Sampling =====================
+
+        // Stores the current set of plotted points (world coordinates).
         private readonly List<Point> _points = new List<Point>();
 
+        // Remembers the last "graph y = expr" part (without the range),
+        // so we can re-request points when the user pans/zooms.
+        private string _baseGraphCommandPrefix = null;
+
+        // Debounce timer so we do not call the F# backend on every single mouse move while panning.
+        private System.Windows.Threading.DispatcherTimer _resampleTimer;
+
+        // Delegate set by MainWindow: given a graph command string, returns points from F#.
+        public Func<string, IEnumerable<Point>> GetPointsForExpression { get; set; }
+
+        // ===================== World / Fit / Camera State =====================
+
         // World-coordinate bounds representing the CURRENT visible window.
-        // These are updated dynamically when the user pans/zooms.
+        // These update dynamically as the user pans/zooms.
         private double _worldMinX = -10.0;
         private double _worldMaxX = 10.0;
         private double _worldMinY = -10.0;
         private double _worldMaxY = 10.0;
 
-        // "Fit" bounds are the bounds computed from the data once (with padding).
-        // These are used as the base extents for the camera's zoom scaling.
+        // "Fit" bounds are computed from the data (with padding) whenever a new plot is loaded.
+        // Zoom scaling is relative to this fitted window (scale=1.0 is the fitted view).
         private double _fitMinX = -10.0;
         private double _fitMaxX = 10.0;
         private double _fitMinY = -10.0;
         private double _fitMaxY = 10.0;
 
-        // Camera / view state:
-        // - view center is in world coordinates
-        // - view scale is relative to the fit window (1.0 = fitted)
+        // Camera/view state in world coordinates.
         private double _viewCenterX = 0.0;
         private double _viewCenterY = 0.0;
         private double _viewScale = 1.0;
 
-        // Pan state
+        // ===================== Pan Interaction State =====================
+
         private bool _isPanning = false;
         private Point _panStartMouse;
         private double _panStartCenterX;
         private double _panStartCenterY;
 
-        // Delegate that is set by MainWindow.
-        // Given a graph command string, this returns a list of points from F#.
-        public Func<string, IEnumerable<Point>> GetPointsForExpression { get; set; }
+        // ===================== Window Setup =====================
 
         public PlotWindow()
         {
             InitializeComponent();
 
-            // Redraw the plot whenever the window is resized
+            // Redraw the plot whenever the window is resized.
             if (PlotCanvas != null)
             {
                 PlotCanvas.SizeChanged += (s, e) => DrawPlot();
             }
+
+            // Timer used to debounce resampling while panning.
+            // This keeps dragging smooth, and then refreshes the data once the user pauses.
+            _resampleTimer = new System.Windows.Threading.DispatcherTimer();
+            _resampleTimer.Interval = TimeSpan.FromMilliseconds(150);
+            _resampleTimer.Tick += (s, e) =>
+            {
+                _resampleTimer.Stop();
+                ResamplePointsForCurrentView();
+            };
         }
 
+        private void PlotWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            DrawPlot();
+        }
+
+        // ===================== Small Utilities =====================
+
         /// <summary>
-        /// Utility function to clamp a value between a minimum and maximum.
+        /// Clamp a value between a minimum and maximum.
         /// </summary>
         private static double Clamp(double v, double min, double max)
         {
@@ -96,6 +135,36 @@ namespace NumeraGUI
             if (v > max) return max;
             return v;
         }
+
+        /// <summary>
+        /// Extracts the "graph y = expr" prefix from whatever the user typed.
+        /// We store this so pan/zoom can rebuild the command with a new range.
+        /// </summary>
+        private static string ExtractCommandPrefix(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return null;
+
+            string trimmed = input.Trim().TrimEnd(';');
+
+            int commaIndex = trimmed.IndexOf(',');
+            if (commaIndex >= 0)
+                return trimmed.Substring(0, commaIndex).Trim(); // "graph y = x^2"
+            else
+                return trimmed.Trim(); // user didn't type a range
+        }
+
+        /// <summary>
+        /// Builds a full graph command string that the F# parser already understands.
+        /// We use invariant formatting so decimals always parse reliably.
+        /// </summary>
+        private static string BuildGraphCommand(string prefix, double xmin, double xmax, double dx)
+        {
+            string f(double v) => v.ToString("G17", System.Globalization.CultureInfo.InvariantCulture);
+            return $"{prefix}, ({f(xmin)}, {f(xmax)}, {f(dx)});";
+        }
+
+        // ===================== Fit / Camera Helpers =====================
 
         /// <summary>
         /// Reset the camera back to the fitted view (centered and scale 1.0).
@@ -110,23 +179,8 @@ namespace NumeraGUI
         }
 
         /// <summary>
-        ///  Recentres the view on the fitted data bounds so the plotted curve
-        ///     always fills the canvas regardless of zoom level.
-        /// </summary>
-        private void FitViewToData()
-        {
-            if (_points.Count == 0)
-                return;
-
-            _viewCenterX = (_fitMinX + _fitMaxX) / 2.0;
-            _viewCenterY = (_fitMinY + _fitMaxY) / 2.0;
-
-            ApplyViewToWorldBounds();
-        }
-
-        /// <summary>
-        /// Update _worldMin/_worldMax from the current camera state.
-        /// The visible span is the fit span divided by zoom scale.
+        /// Updates _worldMin/_worldMax from the current camera state.
+        /// Visible span is the fitted span divided by zoom scale.
         /// </summary>
         private void ApplyViewToWorldBounds()
         {
@@ -152,18 +206,105 @@ namespace NumeraGUI
         }
 
         /// <summary>
-        /// Called when the window finishes loading.
-        /// If any points already exist, this ensures they are drawn.
+        /// Convert a canvas pixel position to a world-coordinate position
+        /// using the current world bounds.
         /// </summary>
-        private void PlotWindow_Loaded(object sender, RoutedEventArgs e)
+        private Point ScreenToWorld(Point canvasPt)
         {
-            DrawPlot();
+            double width = PlotCanvas.ActualWidth;
+            double height = PlotCanvas.ActualHeight;
+
+            double usableWidth = width - PlotPaddingLeft - PlotPaddingRight;
+            double usableHeight = height - PlotPaddingTop - PlotPaddingBottom;
+
+            double rangeX = _worldMaxX - _worldMinX;
+            double rangeY = _worldMaxY - _worldMinY;
+
+            if (usableWidth <= 0 || usableHeight <= 0 || rangeX <= 0 || rangeY <= 0)
+                return new Point(_viewCenterX, _viewCenterY);
+
+            double x = _worldMinX + ((canvasPt.X - PlotPaddingLeft) / usableWidth) * rangeX;
+            double y = _worldMinY + ((usableHeight - (canvasPt.Y - PlotPaddingTop)) / usableHeight) * rangeY;
+
+            return new Point(x, y);
         }
+
+        // ===================== Option A: Resample Points For Visible Window =====================
+
+        /// <summary>
+        /// Picks a step size based on the current visible x-span and canvas width.
+        /// The idea is roughly "one point per pixel", clamped so it stays responsive.
+        /// </summary>
+        private double ComputeDxForCurrentView(double xmin, double xmax)
+        {
+            double span = xmax - xmin;
+            if (span <= 0)
+                return 0.1;
+
+            double width = PlotCanvas.ActualWidth;
+            double usableWidth = width - PlotPaddingLeft - PlotPaddingRight;
+
+            // Fallback if the window is not measured yet.
+            if (usableWidth <= 50)
+                usableWidth = 800;
+
+            int targetPoints = (int)Math.Round(usableWidth);
+
+            // Clamp so we do not hammer the backend for huge ranges,
+            // but still keep it smooth for normal use.
+            targetPoints = (int)Clamp(targetPoints, 400, 2500);
+
+            // Stay comfortably under the F# safety cap (5000).
+            targetPoints = Math.Min(targetPoints, 4500);
+
+            return span / (targetPoints - 1);
+        }
+
+        /// <summary>
+        /// Requests a fresh set of points from the F# backend using the currently visible x-range.
+        /// This is what makes the curve feel like it continues "forever" when you pan/zoom.
+        /// </summary>
+        private void ResamplePointsForCurrentView()
+        {
+            if (GetPointsForExpression == null || string.IsNullOrWhiteSpace(_baseGraphCommandPrefix))
+                return;
+
+            if (PlotCanvas == null)
+                return;
+
+            double xmin = _worldMinX;
+            double xmax = _worldMaxX;
+
+            if (xmax <= xmin)
+                return;
+
+            double dx = ComputeDxForCurrentView(xmin, xmax);
+            string cmd = BuildGraphCommand(_baseGraphCommandPrefix, xmin, xmax, dx);
+
+            try
+            {
+                var newPoints = GetPointsForExpression(cmd);
+
+                // IMPORTANT:
+                // Replace the points without refitting the view, otherwise the user's pan/zoom gets undone.
+                _points.Clear();
+                if (newPoints != null)
+                    _points.AddRange(newPoints);
+
+                DrawPlot();
+            }
+            catch
+            {
+                // If the backend errors while panning into awkward ranges, we just keep the last valid plot.
+            }
+        }
+
+        // ===================== UI Buttons =====================
 
         /// <summary>
         /// Handles the Plot button.
         /// Reads the expression from the text box, asks F# to generate points,
-        /// and then updates the plot.
+        /// then fits the view and draws the plot.
         /// </summary>
         private void PlotButton_Click(object sender, RoutedEventArgs e)
         {
@@ -174,6 +315,9 @@ namespace NumeraGUI
 
             if (string.IsNullOrWhiteSpace(expr))
                 return;
+
+            // Save the command prefix so pan/zoom can rebuild the command with a new range.
+            _baseGraphCommandPrefix = ExtractCommandPrefix(expr);
 
             try
             {
@@ -213,6 +357,8 @@ namespace NumeraGUI
             PlotCanvas.Children.Clear();
             FunctionTextBox.Clear();
 
+            _baseGraphCommandPrefix = null;
+
             // Reset to defaults
             _fitMinX = -10.0;
             _fitMaxX = 10.0;
@@ -223,27 +369,42 @@ namespace NumeraGUI
             DrawPlot();
         }
 
-        // ===================== CAMERA-BASED ZOOM & PAN =====================
+        // ===================== Camera Controls: Zoom & Pan =====================
 
         /// <summary>
         /// Mouse wheel zooms in/out around the mouse pointer position.
-        /// This keeps the point under the cursor stable while zooming by updating the camera.
+        /// We also resample points immediately so the curve stays smooth at the new zoom level.
         /// </summary>
         private void PlotCanvas_MouseWheel(object sender, MouseWheelEventArgs e)
         {
             if (PlotCanvas == null || _points.Count == 0)
                 return;
 
+            // World position under mouse BEFORE zoom
+            Point mouse = e.GetPosition(PlotCanvas);
+            Point worldBefore = ScreenToWorld(mouse);
+
+            // Apply zoom
             double zoom = (e.Delta > 0) ? ZoomStep : (1.0 / ZoomStep);
             _viewScale = Clamp(_viewScale * zoom, MinZoom, MaxZoom);
 
-            // Always refit the view so the line fills the canvas
-            FitViewToData();
-            DrawPlot();
+            // Update bounds with the new scale (centre unchanged for now)
+            ApplyViewToWorldBounds();
+
+            // World position under mouse AFTER zoom (same centre)
+            Point worldAfter = ScreenToWorld(mouse);
+
+            // Shift the camera so the point under the cursor stays in the same place
+            _viewCenterX += (worldBefore.X - worldAfter.X);
+            _viewCenterY += (worldBefore.Y - worldAfter.Y);
+
+            ApplyViewToWorldBounds();
+
+            // Option A: refresh points for the visible window
+            ResamplePointsForCurrentView();
 
             e.Handled = true;
         }
-
 
         /// <summary>
         /// Start panning (left mouse drag).
@@ -259,7 +420,7 @@ namespace NumeraGUI
             _panStartMouse = e.GetPosition(PlotCanvas);
             _panStartCenterX = _viewCenterX;
             _panStartCenterY = _viewCenterY;
-            
+
             PlotCanvas.CaptureMouse();
             PlotCanvas.Cursor = Cursors.Hand;
             e.Handled = true;
@@ -280,7 +441,8 @@ namespace NumeraGUI
         }
 
         /// <summary>
-        /// Update camera center while dragging to pan.
+        /// Update camera centre while dragging to pan.
+        /// We debounce the backend call, otherwise it would be too spammy during a drag.
         /// </summary>
         private void PlotCanvas_MouseMove(object sender, MouseEventArgs e)
         {
@@ -302,17 +464,21 @@ namespace NumeraGUI
             if (usableWidth <= 0 || usableHeight <= 0 || rangeX <= 0 || rangeY <= 0)
                 return;
 
-            // Convert pixel delta to world delta based on current view window
+            // Convert pixel delta to world delta using the current view.
             double dxWorld = deltaPx.X * (rangeX / usableWidth);
             double dyWorld = deltaPx.Y * (rangeY / usableHeight);
 
-            // "Grab and drag": move the camera opposite to the mouse drag
+            // "Grab and drag": move the camera opposite to the mouse drag.
             _viewCenterX = _panStartCenterX - dxWorld;
             _viewCenterY = _panStartCenterY + dyWorld; // screen Y increases downward
 
             ApplyViewToWorldBounds();
-            DrawPlot();
 
+            // Debounce the resample - we only refresh once the user pauses.
+            _resampleTimer.Stop();
+            _resampleTimer.Start();
+
+            DrawPlot();
             e.Handled = true;
         }
 
@@ -329,11 +495,11 @@ namespace NumeraGUI
             e.Handled = true;
         }
 
-        // ===================== EXISTING PLOTTING LOGIC =====================
+        // ===================== Plot Loading (Fit to New Data) =====================
 
         /// <summary>
         /// Replaces the current plot data with a new set of points,
-        /// then rescales and redraws the plot.
+        /// then fits the view and redraws.
         /// </summary>
         public void PlotFromCoordinates(IEnumerable<Point> points)
         {
@@ -346,10 +512,18 @@ namespace NumeraGUI
 
             FitWorldToPoints();
             DrawPlot();
+
+            // One-shot resample so the initial plot uses the same dx logic as pan/zoom.
+            // Dispatcher makes sure PlotCanvas.ActualWidth/ActualHeight are valid.
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                ResamplePointsForCurrentView();
+            }), System.Windows.Threading.DispatcherPriority.Background);
         }
 
+
         /// <summary>
-        /// Automatically adjusts the fit bounds so that all points are visible with a small margin.
+        /// Computes the fitted bounds so all points are visible with a small margin.
         /// Then resets the camera to the fitted view.
         /// </summary>
         private void FitWorldToPoints()
@@ -370,7 +544,7 @@ namespace NumeraGUI
             double minY = _points.Min(p => p.Y);
             double maxY = _points.Max(p => p.Y);
 
-            // Handle nearly-flat functions so they are still visible
+            // Handle nearly-flat functions so they are still visible.
             if (Math.Abs(maxX - minX) < 1e-9)
             {
                 minX -= 1.0;
@@ -383,7 +557,7 @@ namespace NumeraGUI
                 maxY += 1.0;
             }
 
-            // Add a small margin so the curve is not tight against the edges
+            // Add a margin so the curve is not tight against the edges.
             double padX = (maxX - minX) * 0.10;
             double padY = (maxY - minY) * 0.10;
 
@@ -394,6 +568,8 @@ namespace NumeraGUI
 
             ResetViewToFit();
         }
+
+        // ===================== Drawing Helpers: Ticks, Grid, Axes =====================
 
         private void DrawXTicks(
             double width,
@@ -546,6 +722,8 @@ namespace NumeraGUI
             }
         }
 
+        // ===================== Main Drawing Routine =====================
+
         private void DrawPlot()
         {
             if (PlotCanvas == null)
@@ -580,6 +758,7 @@ namespace NumeraGUI
             DrawVerticalGridLines(width, height, ToCanvasX, ToCanvasY);
             DrawHorizontalGridLines(width, height, ToCanvasX, ToCanvasY);
 
+            // Axes (only draw if 0 is visible).
             if (_worldMinX <= 0 && 0 <= _worldMaxX)
             {
                 double x0 = ToCanvasX(0);
@@ -613,6 +792,7 @@ namespace NumeraGUI
             DrawXTicks(width, height, ToCanvasX, ToCanvasY);
             DrawYTicks(width, height, ToCanvasX, ToCanvasY);
 
+            // Convert the world points into canvas points (and filter out invalid values).
             var xs = new List<double>();
             var ys = new List<double>();
 
@@ -629,15 +809,19 @@ namespace NumeraGUI
                 ys.Add(cy);
             }
 
+            // Not enough points for spline interpolation, so just draw a basic polyline.
             if (xs.Count < 3)
             {
-                var fallback = new Polyline { 
-                    Stroke = Brushes.Blue, 
+                var fallback = new Polyline
+                {
+                    Stroke = Brushes.Blue,
                     StrokeThickness = 2,
                     Clip = new RectangleGeometry(new Rect(0, 0, width, height))
                 };
+
                 for (int i = 0; i < xs.Count; i++)
                     fallback.Points.Add(new Point(xs[i], ys[i]));
+
                 PlotCanvas.Children.Add(fallback);
                 return;
             }
@@ -667,6 +851,11 @@ namespace NumeraGUI
     // Source reference: https://swharden.com/blog/2022-01-22-spline-interpolation/
     // This is an adaptation of original work by Ryan Seghers (links in the blog).
     // =====================================================================
+
+    /// <summary>
+    /// Cubic provides spline interpolation for smoothing the curve on-screen.
+    /// The input points are spaced unevenly, then resampled to a smooth set of output points.
+    /// </summary>
     public static class Cubic
     {
         public static (double[] xs, double[] ys) InterpolateXY(double[] xs, double[] ys, int count)
