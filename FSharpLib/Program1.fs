@@ -142,7 +142,10 @@ module Numera =
     // terminal, parser and evaluator
 
     //<statement> ::= 'let' <type> <identifier> '=' <expr> ';' | <expr>
-    //<graph> ::= 'graph' <identifier> '=' <expr> [ ',' '(' <num> ',' <num> ')' ] ';'
+    //<graph> ::= 'graph' 'y' '=' <expr> [ ',' '(' <num> ',' <num> ')' ] ';'
+        //| 'graphdif' 'y' '=' <expr> [ ',' '(' <num> ',' <num> ')' ] ';'
+        //| 'graphint' 'y'' '=' <expr> [ ',' '(' <num> ',' <num> ')' ] ';'
+        //| 'findroot' 'y' '=' <expr> [ ',' '(' <num> ',' <num> ')' ] ';'
     //<type> ::= <int> | <float> | <bool>
     //<expr> ::= <term>
         //| <expr> + <term>
