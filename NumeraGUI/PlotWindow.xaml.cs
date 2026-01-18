@@ -137,6 +137,18 @@ namespace NumeraGUI
         }
 
         /// <summary>
+        /// Returns true if a value is a real finite number (not NaN or Infinity).
+        /// </summary>
+        private static bool IsFinite(double v) =>
+            !(double.IsNaN(v) || double.IsInfinity(v));
+
+        /// <summary>
+        /// Returns true if a world point contains finite X and Y values.
+        /// </summary>
+        private static bool IsValidWorldPoint(Point p) =>
+            IsFinite(p.X) && IsFinite(p.Y);
+
+        /// <summary>
         /// Extracts the "graph y = expr" prefix from whatever the user typed.
         /// We store this so pan/zoom can rebuild the command with a new range.
         /// </summary>
@@ -528,7 +540,12 @@ namespace NumeraGUI
         /// </summary>
         private void FitWorldToPoints()
         {
-            if (_points.Count == 0)
+            // Some expressions (e.g. 1/x) can produce NaN/Infinity at certain x values.
+            // We ignore invalid points when fitting the view to prevent NaN bounds from
+            // breaking axis/grid rendering.
+            var validPoints = _points.Where(IsValidWorldPoint).ToList();
+
+            if (validPoints.Count == 0)
             {
                 _fitMinX = -10.0;
                 _fitMaxX = 10.0;
@@ -539,10 +556,10 @@ namespace NumeraGUI
                 return;
             }
 
-            double minX = _points.Min(p => p.X);
-            double maxX = _points.Max(p => p.X);
-            double minY = _points.Min(p => p.Y);
-            double maxY = _points.Max(p => p.Y);
+            double minX = validPoints.Min(p => p.X);
+            double maxX = validPoints.Max(p => p.X);
+            double minY = validPoints.Min(p => p.Y);
+            double maxY = validPoints.Max(p => p.Y);
 
             // Handle nearly-flat functions so they are still visible.
             if (Math.Abs(maxX - minX) < 1e-9)
@@ -792,57 +809,106 @@ namespace NumeraGUI
             DrawXTicks(width, height, ToCanvasX, ToCanvasY);
             DrawYTicks(width, height, ToCanvasX, ToCanvasY);
 
-            // Convert the world points into canvas points (and filter out invalid values).
-            var xs = new List<double>();
-            var ys = new List<double>();
+            // Convert the world points into canvas segments.
+            // Some functions (e.g. 1/x) contain discontinuities. Even if values are finite,
+            // connecting points across a discontinuity can create a misleading vertical line.
+            // To avoid this, we split the curve into segments when there is a large pixel jump.
+
+            var segments = new List<List<Point>>();
+            var current = new List<Point>();
+
+            Point? prevCanvas = null;
+
+            // If consecutive points jump most of the canvas height, treat it as a discontinuity.
+            double maxJumpPxY = height * 0.8;
+
+            void Flush()
+            {
+                if (current.Count > 0)
+                {
+                    segments.Add(current);
+                    current = new List<Point>();
+                }
+            }
 
             foreach (var p in _points)
             {
+                // Skip invalid world points and end the current segment.
+                if (!IsValidWorldPoint(p))
+                {
+                    Flush();
+                    prevCanvas = null;
+                    continue;
+                }
+
                 double cx = ToCanvasX(p.X);
                 double cy = ToCanvasY(p.Y);
 
-                if (double.IsNaN(cx) || double.IsNaN(cy) ||
-                    double.IsInfinity(cx) || double.IsInfinity(cy))
+                if (!IsFinite(cx) || !IsFinite(cy))
+                {
+                    Flush();
+                    prevCanvas = null;
                     continue;
+                }
 
-                xs.Add(cx);
-                ys.Add(cy);
+                var canvasPt = new Point(cx, cy);
+
+                if (prevCanvas.HasValue)
+                {
+                    double dyPx = Math.Abs(canvasPt.Y - prevCanvas.Value.Y);
+                    if (dyPx > maxJumpPxY)
+                    {
+                        Flush();
+                    }
+                }
+
+                current.Add(canvasPt);
+                prevCanvas = canvasPt;
             }
 
-            // Not enough points for spline interpolation, so just draw a basic polyline.
-            if (xs.Count < 3)
+            Flush();
+
+            int interpCount = (int)Math.Max(200, Math.Min(5000, width));
+
+            foreach (var seg in segments)
             {
-                var fallback = new Polyline
+                if (seg.Count < 2)
+                    continue;
+
+                // Not enough points for spline interpolation, so draw a basic polyline.
+                if (seg.Count < 3)
+                {
+                    var fallback = new Polyline
+                    {
+                        Stroke = Brushes.Blue,
+                        StrokeThickness = 2,
+                        Clip = new RectangleGeometry(new Rect(0, 0, width, height))
+                    };
+
+                    foreach (var pt in seg)
+                        fallback.Points.Add(pt);
+
+                    PlotCanvas.Children.Add(fallback);
+                    continue;
+                }
+
+                double[] xs = seg.Select(pt => pt.X).ToArray();
+                double[] ys = seg.Select(pt => pt.Y).ToArray();
+
+                (double[] xsOut, double[] ysOut) = Cubic.InterpolateXY(xs, ys, interpCount);
+
+                var smooth = new Polyline
                 {
                     Stroke = Brushes.Blue,
                     StrokeThickness = 2,
                     Clip = new RectangleGeometry(new Rect(0, 0, width, height))
                 };
 
-                for (int i = 0; i < xs.Count; i++)
-                    fallback.Points.Add(new Point(xs[i], ys[i]));
+                for (int i = 0; i < xsOut.Length; i++)
+                    smooth.Points.Add(new Point(xsOut[i], ysOut[i]));
 
-                PlotCanvas.Children.Add(fallback);
-                return;
+                PlotCanvas.Children.Add(smooth);
             }
-
-            int interpCount = (int)Math.Max(200, Math.Min(5000, width));
-
-            (double[] xsOut, double[] ysOut) = Cubic.InterpolateXY(xs.ToArray(), ys.ToArray(), interpCount);
-
-            var smooth = new Polyline
-            {
-                Stroke = Brushes.Blue,
-                StrokeThickness = 2,
-                Clip = new RectangleGeometry(new Rect(0, 0, width, height))
-            };
-
-            for (int i = 0; i < xsOut.Length; i++)
-            {
-                smooth.Points.Add(new Point(xsOut[i], ysOut[i]));
-            }
-
-            PlotCanvas.Children.Add(smooth);
         }
     }
 

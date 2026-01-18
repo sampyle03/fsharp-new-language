@@ -804,11 +804,13 @@ module Interpreter =
             let exprPart = afterKeyword.Trim()
             let equalsIndex = exprPart.IndexOf('=')
             if equalsIndex < 0 then
-                failwith "Graph command must be of the form: graph y= expression, (min, max);"
+                failwith "Graph command must be of the form: graph y  expression, (min, max);"
 
             let varName    = exprPart.Substring(0, equalsIndex).Trim()
             let exprString = exprPart.Substring(equalsIndex + 1).Trim()
 
+            if String.IsNullOrWhiteSpace(varName) then
+                failwith "Graph command must specify a variable name, e.g. graph y = x^2, (-10, 10);"
             // Default range and no dx
             (firstWord, varName, exprString, -10.0, 10.0, None)
 
