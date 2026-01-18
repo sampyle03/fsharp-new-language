@@ -216,7 +216,6 @@ module Numera =
                     let confirmed = floatIntTypeCheck declarationType targetValue
                     (confirmed, afterExpressionTail)
                 | StringType -> raise (System.Exception("Cannot assign string to non-string"))
-                | _ -> raise (System.Exception("Unhandled declaration type"))
             else
                 if Map.containsKey name !symbolTable then
                     let variableFound = (!symbolTable).[name].value
@@ -234,6 +233,22 @@ module Numera =
                             raise (System.Exception(sprintf "Type mismatch: declared %A but got %A" declarationType value))
                 else
                     raise (System.Exception("Undefined variable usage attempted"))
+
+        | _ ->
+            // Covers NumInt / NumFloat / parenthesised expressions / unary minus / etc.
+            // This is the missing case that caused "match cases were incomplete".
+            match declarationType with
+            | FloatType
+            | IntType ->
+                let (afterExpressionTail, floatValue) = evalExpression tokens
+                let targetValue = floatToValType declarationType floatValue
+                let confirmed = floatIntTypeCheck declarationType targetValue
+                (confirmed, afterExpressionTail)
+            | BoolType ->
+                raise (System.Exception("Expected boolean literal or boolean variable"))
+            | StringType ->
+                raise (System.Exception("Expected string literal or string variable"))
+
 
 
     let add(x:int, y:int) : int = x + y
