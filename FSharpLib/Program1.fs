@@ -1,5 +1,5 @@
 // Simple Interpreter in F#
-// Author: R.J. Lapeer 
+// Author: R.J. Lapeer , Sam Pyle, Liberty Harrington
 // Date: 23/10/2022
 // Reference: Peter Sestoft, Grammars and parsing with F#, Tech. Report
 
@@ -142,7 +142,10 @@ module Numera =
     // terminal, parser and evaluator
 
     //<statement> ::= 'let' <type> <identifier> '=' <expr> ';' | <expr>
-    //<graph> ::= 'graph' <identifier> '=' <expr> [ ',' '(' <num> ',' <num> ')' ] ';'
+    //<graph> ::= 'graph' 'y' '=' <expr> [ ',' '(' <num> ',' <num> ')' ] ';'
+        //| 'graphdif' 'y' '=' <expr> [ ',' '(' <num> ',' <num> ')' ] ';'
+        //| 'graphint' 'y'' '=' <expr> [ ',' '(' <num> ',' <num> ')' ] ';'
+        //| 'findroot' 'y' '=' <expr> [ ',' '(' <num> ',' <num> ')' ] ';'
     //<type> ::= <int> | <float> | <bool>
     //<expr> ::= <term>
         //| <expr> + <term>
@@ -185,6 +188,9 @@ module Numera =
         | TypeInt | TypeFloat | TypeBool
         | Equals | Semicolon | Comma
         | Graph
+        | GraphDif
+        | GraphInt
+        | FindRoot
         
 
     let varDeclarationRHS 
@@ -201,37 +207,34 @@ module Numera =
             if declarationType <> BoolType then raise (System.Exception("Cannot assign boolean to non-bool"))
             (ValBool false, tail)
         | Identifier name :: tail ->
-            if Map.containsKey name !symbolTable then
-                let variableFound = (!symbolTable).[name].value
-                match variableFound with
-                | None -> raise (System.Exception("Variable used before initialisation"))
-                | Some value ->
-                    let (afterExpressionTail, floatValue) = evalExpression tokens
-                    match declarationType, value with
-                    | BoolType, ValBool foundBoolean -> (ValBool foundBoolean, tail)
-                    | BoolType, _ -> raise (System.Exception("Cannot assign non-bool to bool"))
-                    | (FloatType | IntType), _ ->
-                        let targetValue = floatToValType declarationType floatValue
-                        let confirmed = floatIntTypeCheck declarationType targetValue
-                        (confirmed, afterExpressionTail)
-                    | StringType, ValString foundString -> (ValString foundString, tail)
-                    | _, _ -> raise (System.Exception(sprintf "Type mismatch: declared %A but got %A" declarationType value))
-            else
-                raise (System.Exception("Undefined variable usage attempted"))
-        | _ -> 
-            let tokensForEval =
+            if name = "sin" || name = "cos" || name = "tan" || name = "exp" || name = "log" then
+                let (afterExpressionTail, floatValue) = evalExpression tokens
                 match declarationType with
-                | FloatType ->                            // if declared as float,
-                    tokens
-                    |> List.map (function                 // maps over tokens and converts them to floats (https://learn.microsoft.com/en-us/dotnet/fsharp/language-reference/lists)
-                        | NumInt n -> NumFloat (float n)
-                        | other    -> other)
-                | _ -> tokens
+                | BoolType -> raise (System.Exception("Cannot assign boolean to non-bool"))
+                | (FloatType | IntType) ->
+                    let targetValue = floatToValType declarationType floatValue
+                    let confirmed = floatIntTypeCheck declarationType targetValue
+                    (confirmed, afterExpressionTail)
+                | StringType -> raise (System.Exception("Cannot assign string to non-string"))
+                | _ -> raise (System.Exception("Unhandled declaration type"))
+            else
+                if Map.containsKey name !symbolTable then
+                    let variableFound = (!symbolTable).[name].value
+                    match variableFound with
+                    | None -> raise (System.Exception("Variable used before initialisation"))
+                    | Some value ->
+                        match declarationType, value with
+                        | BoolType, ValBool foundBoolean -> (ValBool foundBoolean, tail)
+                        | BoolType, _ -> raise (System.Exception("Cannot assign non-bool to bool"))
+                        | (FloatType | IntType), _ ->
+                            let confirmed = floatIntTypeCheck declarationType value
+                            (confirmed, tail)
+                        | StringType, ValString foundString -> (ValString foundString, tail)
+                        | _, _ ->
+                            raise (System.Exception(sprintf "Type mismatch: declared %A but got %A" declarationType value))
+                else
+                    raise (System.Exception("Undefined variable usage attempted"))
 
-            let (remaining, result) = evalExpression tokensForEval
-            let value = floatToValType declarationType result
-
-            (value, remaining)
 
     let add(x:int, y:int) : int = x + y
 
@@ -243,17 +246,20 @@ module Numera =
     let charToDigit (c:char) = (int)((int)c - (int)'0')
     let parseError = System.Exception("Parser error")
 
+    // identifies whether value is a float
     let isFloat (value) =
         let s = string value
         let mutable d = 0.0
         let ok = Double.TryParse(s, &d)
         ok && s.Contains(".")
 
+    // scans decimal number to understand it
     let rec scanDecimal(chars: char list) (value: string) : (char list * string) =
         match chars with
         | c::tail when isDigit c -> scanDecimal tail (value + string c)
         | _ -> (chars, value)
 
+    // scans number (integer or decimal) to understand it
     let rec scanNumber(chars: char list) (value: string) : (char list * string) = 
         match chars with
         | c :: tail when isDigit c -> 
@@ -266,6 +272,7 @@ module Numera =
                             (rest, value + "." + decimal)
         | _ -> (chars, value)
 
+    // scans identifier (written text that is not a number) to understand it
     let rec scanIdentifier(remaining, identStr) =
         match remaining with
         c :: tail when isLetter c -> scanIdentifier(tail, identStr + string c)
@@ -306,16 +313,17 @@ module Numera =
                                            | "true" -> Identifier "true" :: scan remaining
                                            | "false" -> Identifier "false" :: scan remaining
                                            | "graph" -> Graph :: scan remaining
+                                           | "graphdif" -> GraphDif :: scan remaining
+                                           | "graphint" -> GraphInt :: scan remaining
+                                           | "findroot" -> FindRoot :: scan remaining
                                            | "x" -> Identifier "x" :: scan remaining
                                            | "y" -> Identifier "y" :: scan remaining
+                                           | "exp" -> Identifier "exp" :: scan remaining
+                                           | "log" -> Identifier "log" :: scan remaining
                                            | other -> Identifier other :: scan remaining
             | _ -> raise lexError
 
         scan (str2lst input)
-
-    let readInputString() : string = 
-        Console.Write("Enter an expression: ")
-        Console.ReadLine()
 
     let parser tokenList =
         Console.WriteLine("Parsing: {0}", tokenList.ToString())
@@ -333,16 +341,22 @@ module Numera =
                 let (exprAST, restTokens) = parseGraphStatement tokens
                 restTokens
 
+        // graph statements are all parsed te same way
         and parseGraphStatement tokens =
             match tokens with
-            | Graph :: Identifier name :: Equals :: tail ->
-                parseExpression tail // parse RHS and return remaining tokens
+            | Graph :: Identifier name :: Equals :: tail
+            | GraphDif :: Identifier name :: Equals :: tail
+            | GraphInt :: Identifier name :: Equals :: tail
+            | FindRoot :: Identifier name :: Equals :: tail ->
+                parseExpression tail
             | _ -> parseExpression tokens
 
+        // expression parsing
         and parseExpression tokens =
             let (leftAST, termRest) = parseTerm tokens
             parseRestOfExpression leftAST termRest
 
+        // expression parsing
         and parseRestOfExpression leftAST tokens =
             match tokens with
             | Add :: tail ->
@@ -355,10 +369,12 @@ module Numera =
                 parseRestOfExpression combinedAST termRest
             | _ -> (leftAST, tokens)
 
+        // term parsing
         and parseTerm tokens =
             let (leftAST, unaryRest) = parseUnary tokens
             parseRestOfTerm leftAST unaryRest
 
+        // term parsing
         and parseRestOfTerm leftAST tokens =
             match tokens with
             | Mul :: tail ->
@@ -375,6 +391,7 @@ module Numera =
                 parseRestOfTerm combinedAST powerRest
             | _ -> (leftAST, tokens)
 
+        // unary minus parsing
          and parseUnary tokens =
             match tokens with
             | Sub :: tail ->
@@ -382,6 +399,7 @@ module Numera =
                 (Unary(Neg, innerAST), unaryRest)
             | _ -> parsePower tokens
 
+        // indices parsing
         and parsePower tokens =
             let (baseAST, factorRest) = parseFactor tokens
             match factorRest with
@@ -390,12 +408,13 @@ module Numera =
                 (Binary(ASTPower, baseAST, expAST), powerRest)
             | _ -> (baseAST, factorRest)
 
+        // factor parsing
         and parseFactor tokens =
             match tokens with
             | NumInt n :: tail -> (Number (float n), tail)
             | NumFloat n :: tail -> (Number (float n), tail)
             | Identifier name :: tail ->
-                if name = "sin" || name = "cos" || name = "tan" then
+                if name = "sin" || name = "cos" || name = "tan" || name = "log" || name = "exp" then
                     let (argAST, tailRest) = parseFactor tail
                     (FuncCall(name, argAST), tailRest)
                 else
@@ -410,20 +429,23 @@ module Numera =
         parseStatement tokenList
 
 
+    // used to evaluate statements
     let parseAndEval tokenList = 
-        // Converts a list of (x, y) coordinate pairs into a strin.
+
+        // pushes temporary binding for variable during graph evaluation
         let pushTempBinding (name:string) (v:Val) =
             let old = Map.tryFind name !symbolTable
-            let t = match v  with | ValInt _ -> IntType | ValFloat _ -> FloatType | ValBool _ -> BoolType | ValString _ -> StringType
-            symbolTable := Map.add name {valType = t;value = Some v } !symbolTable
+            let temp = match v with | ValInt _ -> IntType | ValFloat _ -> FloatType | ValBool _ -> BoolType | ValString _ -> StringType
+            symbolTable := Map.add name { valType = temp; value = Some v } !symbolTable
             old
 
-        let popRestoreBinding (name:string) (oldOption:Symbol option) =
-            match oldOption with
+        // pops binding after graph evaluation
+        let popRestoreBinding (name:string) (oldOpt: Symbol option) =
+            match oldOpt with
             | None -> symbolTable := Map.remove name !symbolTable
             | Some s -> symbolTable := Map.add name s !symbolTable
 
-        // Converts a value into a human-readable string.
+        // converts a Val to a string
         let valToString (v:Val) =
             match v with
             | ValInt i -> sprintf "%d" i
@@ -431,12 +453,13 @@ module Numera =
             | ValBool b -> if b then "true" else "false"
             | ValString s -> s
 
+        // formats list of pairs - used for graph output
         let formatPairs (pairs:(Val * Val) list) =
             let elems = pairs |> List.map (fun (x,y) -> sprintf "(%s,%s)" (valToString x) (valToString y))
             "[" + (String.Join(",", elems)) + "]"
 
         // split graph tokens into equation and graph range
-        let splitGraphTokens (tokens: terminal list)
+        let rec splitGraphTokens (tokens: terminal list)
             : (terminal list * float * float * terminal list) =
 
             let rec loop accumulatedTokens bracketDepth remainingTokens =
@@ -459,7 +482,7 @@ module Numera =
                     let yRange = parseNumber yToken
 
                     (List.rev accumulatedTokens, xRange, yRange, tail)
-
+                    
                 | headToken :: tailTokens ->
                     let newBracketDepth =
                         match headToken with
@@ -473,7 +496,7 @@ module Numera =
 
 
         // evaluates graph
-        let rec varGraphRHS (exprTokens:terminal list) (xMax:float) (yMax:float) : (Val * Val) list =
+        and varGraphRHS (varName:string) (exprTokens:terminal list) (xMax:float) (yMax:float) : (Val * Val) list =
             let numOfPoints = 100
             let rec sample i acc =
                 if i >= numOfPoints then List.rev acc
@@ -483,25 +506,25 @@ module Numera =
                         let j = int computedX
                         if float j = computedX then ValInt j else ValFloat computedX
 
-                    // push temporary x variable binding
-                    let previousVal = pushTempBinding "x" xValSymb
+                    let prevVar = pushTempBinding varName xValSymb
+                    let prevX = pushTempBinding "x" xValSymb
                     try
                         try
                             let (remaining, yVal) = evalExpressionVal exprTokens
-                            // range checking
                             let yValFloat = valToFloat yVal
                             if yValFloat > -yMax && yValFloat < yMax then
                                 sample (i + 1) ((xValSymb, yVal) :: acc)
                             else
                                 sample (i + 1) acc
                         with ex ->
-                            Console.WriteLine("Skipping x={0}: {1}", computedX, ex.Message)
+                            Console.WriteLine("Skipping {0}={1}: {2}", varName, computedX, ex.Message)
                             sample (i + 1) acc
                     finally
-                        // restore previous x variable binding
-                        popRestoreBinding "x" previousVal
+                        popRestoreBinding "x" prevX
+                        popRestoreBinding varName prevVar
             sample 0 []
 
+        // differentiation and integration logic moved to Intepreter
         and evalStatement tokens =
             match tokens with
             | Graph :: Identifier name :: Equals :: tail ->
@@ -510,7 +533,7 @@ module Numera =
                     match remainder with
                     | Semicolon :: rest -> rest
                     | _ -> remainder
-                let pairs = varGraphRHS exprTokens xMax yMax
+                let pairs = varGraphRHS name exprTokens xMax yMax
                 Console.WriteLine("{0}", formatPairs pairs)
                 (restAfter, 0.0)
             | Let :: TypeInt :: Identifier name :: Equals :: tail
@@ -532,15 +555,23 @@ module Numera =
                     declareVariable name declaredType valueVal
                     (restAfterSemi, valToFloat valueVal)
                 | _ -> raise (System.Exception("Missing semicolon in declaration"))
-            | _ -> evalExpressionFloat tokens
+            | _ ->
+                let (rem, valueFloat) = evalExpressionFloat tokens
+                match rem with
+                | Semicolon :: rest -> (rest, valueFloat)
+                | _ -> (rem, valueFloat)
 
+
+        // expression evaluation
         and evalExpressionFloat tokens =
             let (rem, v) = evalExpressionVal tokens
             (rem, valToFloat v)
 
+        // expression evaluation
         and evalExpressionVal tokens =
             (evalTermVal >> evalRestOfExpressionVal) tokens
 
+        // expression evaluation
         and evalRestOfExpressionVal (tokens, leftVal: Val) =
             match tokens with
             | Add :: tail ->
@@ -553,8 +584,10 @@ module Numera =
                 evalRestOfExpressionVal (tokenRemainder, result)
             | _ -> (tokens, leftVal)
 
+        // term evaluation
         and evalTermVal tokens = (evalUnaryVal >> evalRestOfTermVal) tokens
 
+        // term evaluation
         and evalRestOfTermVal (tokens, leftVal: Val) =
             match tokens with
             | Mul :: tail ->
@@ -574,8 +607,15 @@ module Numera =
                 let (tokenRemainder, factorVal) = evalUnaryVal tail
                 let result = valRem leftVal factorVal
                 evalRestOfTermVal (tokenRemainder, result)
+
+            | (NumInt _ | NumFloat _ | Identifier _ | Lpar) :: _ ->
+                let (tokenRemainder, factorVal) = evalPowerVal tokens
+                let result = valMult leftVal factorVal
+                evalRestOfTermVal (tokenRemainder, result)
+
             | _ -> (tokens, leftVal)
 
+        // unary minus evaluation
         and evalUnaryVal tokens =
             match tokens with
             | Sub :: tail -> 
@@ -588,6 +628,7 @@ module Numera =
                 (tokenRemainder, neg)
             | _ -> evalPowerVal tokens
 
+        // indices evaluation
         and evalPowerVal tokens =
             let (remainderAfterBase, baseVal) = evalFactorVal tokens
             match remainderAfterBase with
@@ -604,6 +645,7 @@ module Numera =
                     (tokenRemainder, ValFloat (baseFloat ** exponentFloat))
             | _ -> (remainderAfterBase, baseVal)
 
+        // factor evaluation
         and evalFactorVal tokens =
             match tokens with 
             | NumInt n :: tail -> (tail, ValInt n)
@@ -611,18 +653,18 @@ module Numera =
             | Identifier name :: tail ->
                 if name = "sin" || name = "cos" || name = "tan" then
                     let (rest, argVal) = evalFactorVal tail
-                    let af = valToFloat argVal
+                    let valAsFloat = valToFloat argVal
                     match name with
-                    | "sin" -> (rest, ValFloat (Math.Sin af))
-                    | "cos" -> (rest, ValFloat (Math.Cos af))
-                    | "tan" -> (rest, ValFloat (Math.Tan af))
+                    | "sin" -> (rest, ValFloat (Math.Sin valAsFloat))
+                    | "cos" -> (rest, ValFloat (Math.Cos valAsFloat))
+                    | "tan" -> (rest, ValFloat (Math.Tan valAsFloat))
                     | _ -> failwith "unreachable"
                 else if name = "exp" || name = "log" then
                     let (rest, argVal) = evalFactorVal tail
-                    let af = valToFloat argVal
+                    let valAsFloat = valToFloat argVal
                     match name with
-                    | "exp" -> (rest, ValFloat (Math.Exp af))
-                    | "log" -> (rest, ValFloat (Math.Log10 af))
+                    | "exp" -> (rest, ValFloat (Math.Exp valAsFloat))
+                    | "log" -> (rest, ValFloat (Math.Log10 valAsFloat))
                     | _ -> failwith "unreachable"
                 else
                     // variable lookup
@@ -643,13 +685,28 @@ module Numera =
         evalStatement tokenList
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 namespace FSharpLib
 
 module Interpreter =
     open System
     open FSharpLib.Numera
 
-    // Convert ValType to a friendly string
+    // Convert ValType to an interpreter-friendly string
     let private valTypeToString (t: ValType) =
         match t with
         | IntType   -> "int"
@@ -657,7 +714,7 @@ module Interpreter =
         | BoolType  -> "bool"
         | StringType -> "string"
 
-    // Convert Val to a friendly string
+    // Convert Val to an interpreter-friendly string
     let private valToString (v: Val) =
         match v with
         | ValInt i    -> string i
@@ -665,10 +722,10 @@ module Interpreter =
         | ValBool b   -> string b
         | ValString s -> "\"" + s + "\""
 
-    /// Return all current variables as a multi-line string.
-    /// Each line:  name : type = value
+
+    // get list of variables in symbol table
     let GetVariables () : string =
-        !symbolTable               // dereference the ref
+        !symbolTable // dereferences the ref
         |> Map.toList
         |> List.map (fun (name, symbol) ->
             let valueStr =
@@ -709,110 +766,239 @@ module Interpreter =
             "Error: " + ex.Message
 
 
-    /// ----------------------------------------------------------------
-    /// Plotting support for WPF
-    /// ----------------------------------------------------------------
+
+    /// ------------------------- Plotting support for WPF ------------------------
 
     /// Parse a graph command like:
-    ///   graph x = x^2, (-10, 10);
-    /// into (variable name, expression string, xmin, xmax)
+    ///   graph y = x^2, (-10, 10);
+    ///   graph y = x^2, (-10, 10, 0.1);
+    ///   graphdif y = sin(x), (-5, 5);
+    ///   graphint y = x^3, (-2, 2);
+    ///   findroot y = x^2 - 4, (-10, 10);
+    /// into (mode, variable name, expression string, xmin, xmax, dx option)
     let private parseGraphCommand (input : string) =
         let trimmed =
             input.Trim()
                  .TrimEnd(';')
 
-        if not (trimmed.StartsWith("graph", StringComparison.OrdinalIgnoreCase)) then
-            failwith "Plot command must start with 'graph'. Example: graph x = x^2, (-10, 10);"
+        let firstWord =
+            trimmed.Split([|' '; '\t'|], StringSplitOptions.RemoveEmptyEntries)
+            |> Array.head
+            |> fun s -> s.ToLowerInvariant()
 
-        // Drop the 'graph' keyword
-        let afterGraph = trimmed.Substring("graph".Length).Trim()    // e.g. "x = x^2, (-10, 10)"
+        if not (firstWord = "graph" || firstWord = "graphdif" || firstWord = "graphint" || firstWord = "findroot") then
+            failwith "Plot command must start with 'graph', 'graphdif', 'graphint', or 'findroot'. Example: graph y= x^2, (-10, 10);"
 
-        // Split at the first comma: left is "x = x^2", right is "(-10, 10)"
-        let commaIndex = afterGraph.IndexOf(',')
-        if commaIndex < 0 then
-            failwith "Graph command must include a range, e.g. graph x = x^2, (-10, 10);"
+        // Drop the keyword
+        let afterKeyword = trimmed.Substring(firstWord.Length).Trim()
 
-        let exprPart  = afterGraph.Substring(0, commaIndex).Trim()   // "x = x^2"
-        let rangePart = afterGraph.Substring(commaIndex + 1).Trim()  // "(-10, 10)"
-
-        // Extract variable name and expression from "x = x^2"
-        let eqIndex = exprPart.IndexOf('=')
-        if eqIndex < 0 then
-            failwith "Graph command must be of the form: graph x = expression, (min, max);"
-
-        let varName    = exprPart.Substring(0, eqIndex).Trim()       // "x"
-        let exprString = exprPart.Substring(eqIndex + 1).Trim()      // "x^2"
-
-        if String.IsNullOrWhiteSpace(varName) then
-            failwith "Graph command must specify a variable name, e.g. graph x = x^2, (-10, 10);"
-
-        // Parse range "(min, max)"
-        if not (rangePart.StartsWith("(") && rangePart.EndsWith(")")) then
-            failwith "Range must be in the form (min, max), e.g. (-10, 10)."
-
-        let rangeClean =
-            rangePart.TrimStart('(')
-                     .TrimEnd(')')
-                     .Trim()                                         // "-10, 10"
-
-        let parts =
-            rangeClean.Split([|','|], StringSplitOptions.RemoveEmptyEntries)
-
-        if parts.Length <> 2 then
-            failwith "Range must contain exactly two values: (min, max)."
+        // Split at the first comma: left is "y = x^2", right is "(-10, 10)" (or "(-10, 10, 0.1)")
+        let commaIndex = afterKeyword.IndexOf(',')
 
         let parseDouble (s : string) =
-            System.Double.Parse(
-                s.Trim(),
-                Globalization.CultureInfo.InvariantCulture
-            )
+            System.Double.Parse(s.Trim(), Globalization.CultureInfo.InvariantCulture)
 
-        let xmin = parseDouble parts.[0]
-        let xmax = parseDouble parts.[1]
+        if commaIndex < 0 then
+            // Allow missing explicit range (defaults)
+            let exprPart = afterKeyword.Trim()
+            let equalsIndex = exprPart.IndexOf('=')
+            if equalsIndex < 0 then
+                failwith "Graph command must be of the form: graph y= expression, (min, max);"
 
-        if xmin >= xmax then
-            failwith "Range must satisfy min < max."
+            let varName    = exprPart.Substring(0, equalsIndex).Trim()
+            let exprString = exprPart.Substring(equalsIndex + 1).Trim()
 
-        varName, exprString, xmin, xmax
+            // Default range and no dx
+            (firstWord, varName, exprString, -10.0, 10.0, None)
+
+        else
+            let exprPart  = afterKeyword.Substring(0, commaIndex).Trim()
+            let rangePart = afterKeyword.Substring(commaIndex + 1).Trim()
+
+            let equalsIndex = exprPart.IndexOf('=')
+            if equalsIndex < 0 then
+                failwith "Graph command must be of the form: graph y = expression, (min, max);"
+
+            let varName    = exprPart.Substring(0, equalsIndex).Trim()
+            let exprString = exprPart.Substring(equalsIndex + 1).Trim()
+
+            if String.IsNullOrWhiteSpace(varName) then
+                failwith "Graph command must specify a variable name, e.g. graph y = x^2, (-10, 10);"
+
+            if not (rangePart.StartsWith("(") && rangePart.EndsWith(")")) then
+                failwith "Range must be in the form (min, max) or (min, max, dx)."
+
+            let rangeClean = rangePart.TrimStart('(').TrimEnd(')').Trim()
+
+            // tokenise parts of range
+            let parts =
+                rangeClean.Split([|','|], StringSplitOptions.RemoveEmptyEntries)
+                |> Array.map (fun s -> s.Trim())
+
+            if parts.Length <> 2 && parts.Length <> 3 then
+                failwith "Range must contain (min, max) or (min, max, dx)."
+
+            let xmin = parseDouble parts.[0]
+            let xmax = parseDouble parts.[1]
+            if xmin >= xmax then failwith "Range must satisfy min < max."
+
+            let dxOpt =
+                if parts.Length = 3 then
+                    let dx = parseDouble parts.[2]
+                    if dx <= 0.0 then failwith "Step size dx must be > 0."
+                    Some dx
+                else
+                    None
+
+            (firstWord, varName, exprString, xmin, xmax, dxOpt)
+
 
 
     /// Evaluate an expression string with a particular variable bound to x.
     /// This uses existing lexer + parseAndEval + symbolTable.
     let private evalExpressionWithVar (varName : string) (exprString : string) (x : float) : float =
-        // Save current symbol table so we can restore it afterwards
-        let oldTable = !symbolTable
+        // Save the old bindings for the two names we will touch (if any)
+        let oldX = Map.tryFind "x" !symbolTable
+        let oldVar = if varName = "x" then oldX else Map.tryFind varName !symbolTable
 
         try
-            // Add or override the variable in the symbol table
-            let symbol =
-                { valType = FloatType
-                  value   = Some (ValFloat x) }
+            let symbol = { valType = FloatType; value = Some (ValFloat x) }
+            // Add or override only the two entries we need
+            symbolTable := Map.add "x" symbol !symbolTable
+            if varName <> "x" then
+                symbolTable := Map.add varName symbol !symbolTable
 
-            symbolTable := Map.add varName symbol !symbolTable
-
-            // Tokenise and evaluate the expression using the existing parser
+            // Tokenise and evaluate with temporary bindings
             let tokens = lexer exprString
-            let (_, result) = parseAndEval tokens   // result : float
-
+            let (_, result) = parseAndEval tokens
             result
         finally
-            // Restore previous symbol table 
-            symbolTable := oldTable
+            // Restore bindings individually (remove if previously absent)
+            match oldX with
+            | None -> symbolTable := Map.remove "x" !symbolTable
+            | Some s -> symbolTable := Map.add "x" s !symbolTable
+
+            if varName <> "x" then
+                match oldVar with
+                | None -> symbolTable := Map.remove varName !symbolTable
+                | Some s -> symbolTable := Map.add varName s !symbolTable
+
 
 
     /// Public function for the WPF plot window.
     /// Expects the full 'graph' command as typed in the GUI, e.g.:
-    ///   graph x = x^2, (-10, 10);
+    ///   graph y = x^2, (-10, 10);
+    ///   graph y = x^2, (-10, 10, 0.1);
     /// Returns a list of (x, y) points sampling the function over [xmin, xmax].
+    /// If dx is included in the range, it uses dx; otherwise uses auto sampling.
     let GetPointsForExpression (input : string) : (float * float) list =
-        let varName, exprString, xmin, xmax = parseGraphCommand input
+        let mode, varName, exprString, xmin, xmax, dxOpt = parseGraphCommand input
 
-        // Number of samples between xmin and xmax
-        let steps = 200
-        let step  = (xmax - xmin) / float steps
+        // Safety cap so extremely small dx cannot freeze the UI
+        let maxPoints = 5000
 
-        [ for i in 0 .. steps ->
-            let x = xmin + float i * step
-            let y = evalExpressionWithVar varName exprString x
-            (x, y) ]
+        let evalAt x =
+            try evalExpressionWithVar varName exprString x
+            with _ -> nan
 
+        // Build x samples once (used by graph / dif / int)
+        let xs : float[] =
+            match dxOpt with
+            | Some dx ->
+                let span = xmax - xmin
+                let rawCount = int (ceil (span / dx)) + 1
+                let count = min rawCount maxPoints
+                let effectiveDx = span / float (count - 1)
+                Array.init count (fun i -> xmin + float i * effectiveDx)
+
+            | None ->
+                // Original behaviour
+                let steps = 200
+                let step  = (xmax - xmin) / float steps
+                Array.init (steps + 1) (fun i -> xmin + float i * step)
+
+        match mode with
+        | "graph" ->
+            [ for x in xs ->
+                let y = evalAt x
+                (x, y) ]
+
+        | "graphdif" ->
+            // central difference
+            // choose h relative to sampling resolution
+            let span = xmax - xmin
+            let approxStep =
+                if xs.Length > 1 then xs[1] - xs[0] else span / 200.0
+            let h = max 1e-6 (approxStep / 1000.0)
+
+            [ for x in xs ->
+                let yPlus = evalAt (x + h)
+                let yMinus = evalAt (x - h)
+                let deriv =
+                    if System.Double.IsNaN(yPlus) || System.Double.IsNaN(yMinus)
+                    then nan
+                    else (yPlus - yMinus) / (2.0 * h)
+                (x, deriv) ]
+
+        | "graphint" ->
+            // Cumulative trapezoidal rule from xmin to each x in xs
+            if xs.Length = 0 then
+                []
+            else
+                let ys = xs |> Array.map evalAt
+
+                let results = Array.zeroCreate<float * float> xs.Length
+                results[0] <- (xs[0], 0.0)
+
+                let mutable acc = 0.0
+                for i in 1 .. xs.Length - 1 do
+                    let x0 = xs[i - 1]
+                    let x1 = xs[i]
+                    let y0 = ys[i - 1]
+                    let y1 = ys[i]
+                    let dx = x1 - x0
+
+                    if System.Double.IsNaN(y0) || System.Double.IsNaN(y1) then
+                        acc <- nan
+                    else
+                        acc <- acc + 0.5 * (y0 + y1) * dx
+
+                    results[i] <- (x1, acc)
+
+                results |> Array.toList
+
+        | "findroot" ->
+            // Newton-Raphson with numerical derivative
+            let initialGuess = (xmin + xmax) / 2.0
+            let tolerance = 1e-10
+            let maxIterations = 100
+
+            let derivativeAt x =
+                let delta = 1e-6
+                let yPlus = evalAt (x + delta)
+                let yMinus = evalAt (x - delta)
+                if System.Double.IsNaN(yPlus) || System.Double.IsNaN(yMinus) then nan
+                else (yPlus - yMinus) / (2.0 * delta)
+
+            let rec newtonIteration x count =
+                if count >= maxIterations then None
+                else
+                    let currentVal = evalAt x
+                    let derivVal = derivativeAt x
+
+                    if System.Double.IsNaN(currentVal) || System.Double.IsNaN(derivVal) then None
+                    elif abs derivVal < 1e-12 then None
+                    else
+                        let xNext = x - currentVal / derivVal
+                        if abs (xNext - x) < tolerance then Some xNext
+                        else newtonIteration xNext (count + 1)
+
+            let root =
+                match newtonIteration initialGuess 0 with
+                | Some r -> r
+                | None -> failwith "Newton-Raphson failed"
+
+            [ (root, 0.0) ]
+
+        | _ ->
+            failwith "Unknown graph mode"

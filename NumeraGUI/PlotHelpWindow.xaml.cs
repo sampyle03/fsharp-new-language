@@ -1,22 +1,24 @@
 /*
-* HelpWindow.xaml.cs
+* PlotHelpWindow.xaml.cs
 * ------------------
-* This file controls the Help window for the Numera application.
+* This file controls the Help window for plotting.
 *
 * The Help window is a simple, modal dialog that displays
 * instructions and usage information for the user.
-*
+* 
 */
 
 using System.Windows;
 
 namespace NumeraGUI
 {
-    public partial class HelpWindow : Window
+    /// <summary>
+    /// Interaction logic for PlotHelpWindow.xaml
+    /// </summary>
+    public partial class PlotHelpWindow : Window
     {
-        public HelpWindow()
+        public PlotHelpWindow()
         {
-            // Initialise the Help window UI defined in HelpWindow.xaml
             InitializeComponent();
         }
 
