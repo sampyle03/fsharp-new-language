@@ -45,6 +45,7 @@ module Numera =
         | ValBool _ -> BoolType
         | ValString _ -> StringType
 
+    // return addition result using appropriate value type
     let valAdd (value1:Val) (value2:Val) : Val =
         match (value1, value2) with
         | (ValInt i, ValInt j) -> ValInt(i + j)
@@ -53,6 +54,7 @@ module Numera =
         | (ValFloat i, ValFloat j) -> ValFloat(i + j)
         | _ -> raise (System.Exception("Addition error"))
 
+    // return subtraction result using appropriate value type
     let valSub (value1:Val) (value2:Val) : Val =
         match (value1, value2) with
         | (ValInt i, ValInt j) -> ValInt(i - j)
@@ -61,6 +63,7 @@ module Numera =
         | (ValFloat i, ValFloat j) -> ValFloat(i - j)
         | _ -> raise (System.Exception("Subtraction error"))
 
+    // return multiplication result using appropriate value type
     let valMult (value1:Val) (value2:Val) : Val =
         match (value1, value2) with
         | (ValInt i, ValInt j) -> ValInt(i * j)
@@ -69,6 +72,7 @@ module Numera =
         | (ValFloat i, ValFloat j) -> ValFloat(i * j)
         | _ -> raise (System.Exception("Multiplication error"))
 
+    // return division result using appropriate value type
     let valDiv (value1:Val) (value2:Val) : Val =
         match (value1, value2) with
         | (ValInt 0, _)
@@ -81,7 +85,7 @@ module Numera =
         | (ValFloat i, ValFloat j) -> ValFloat (i / j)
         | _ -> raise (System.Exception("Division error"))
 
-
+    // return remainder result using appropriate value type
     let valRem (value1:Val) (value2:Val) : Val =
         match (value1, value2) with
         | ValInt 0, _
@@ -126,6 +130,7 @@ module Numera =
                 raise (System.Exception("Lexer error"))
         | _ -> raise (System.Exception("floatToValType called for a type which is not numeric."))
 
+    // check type of value
     let floatIntTypeCheck (varType: ValType) (v:Val) : Val =
         let finalVal =
             match v with
@@ -192,7 +197,7 @@ module Numera =
         | GraphInt
         | FindRoot
         
-
+    // handle right hand side of variable declaration
     let varDeclarationRHS 
         (declarationType: ValType) 
         (tokens: list<terminal>) 
@@ -216,7 +221,6 @@ module Numera =
                     let confirmed = floatIntTypeCheck declarationType targetValue
                     (confirmed, afterExpressionTail)
                 | StringType -> raise (System.Exception("Cannot assign string to non-string"))
-                | _ -> raise (System.Exception("Unhandled declaration type"))
             else
                 if Map.containsKey name !symbolTable then
                     let variableFound = (!symbolTable).[name].value
@@ -235,9 +239,24 @@ module Numera =
                 else
                     raise (System.Exception("Undefined variable usage attempted"))
 
+        | _ ->
+            // Covers NumInt / NumFloat / parenthesised expressions / unary minus / etc.
+            // This is the missing case that caused "match cases were incomplete".
+            match declarationType with
+            | FloatType
+            | IntType ->
+                let (afterExpressionTail, floatValue) = evalExpression tokens
+                let targetValue = floatToValType declarationType floatValue
+                let confirmed = floatIntTypeCheck declarationType targetValue
+                (confirmed, afterExpressionTail)
+            | BoolType ->
+                raise (System.Exception("Expected boolean literal or boolean variable"))
+            | StringType ->
+                raise (System.Exception("Expected string literal or string variable"))
 
+
+    // simple helpers
     let add(x:int, y:int) : int = x + y
-
     let str2lst s = [for c in s -> c] // Converts the input string to list of characters
     let isBlank c = System.Char.IsWhiteSpace c
     let isDigit c = System.Char.IsDigit c
@@ -278,6 +297,7 @@ module Numera =
         c :: tail when isLetter c -> scanIdentifier(tail, identStr + string c)
         | _ -> (remaining, identStr)
 
+    // lexer
     let lexer input = 
         let rec scan input =
             match input with
@@ -368,7 +388,7 @@ module Numera =
                 let combinedAST = Binary(ASTSub, leftAST, rightAST)
                 parseRestOfExpression combinedAST termRest
             | _ -> (leftAST, tokens)
-
+           
         // term parsing
         and parseTerm tokens =
             let (leftAST, unaryRest) = parseUnary tokens
@@ -561,17 +581,16 @@ module Numera =
                 | Semicolon :: rest -> (rest, valueFloat)
                 | _ -> (rem, valueFloat)
 
-
-        // expression evaluation
+        // expression eval
         and evalExpressionFloat tokens =
             let (rem, v) = evalExpressionVal tokens
             (rem, valToFloat v)
 
-        // expression evaluation
+        // expression eval
         and evalExpressionVal tokens =
             (evalTermVal >> evalRestOfExpressionVal) tokens
 
-        // expression evaluation
+        // expression eval
         and evalRestOfExpressionVal (tokens, leftVal: Val) =
             match tokens with
             | Add :: tail ->
@@ -584,10 +603,10 @@ module Numera =
                 evalRestOfExpressionVal (tokenRemainder, result)
             | _ -> (tokens, leftVal)
 
-        // term evaluation
+        // term eval
         and evalTermVal tokens = (evalUnaryVal >> evalRestOfTermVal) tokens
 
-        // term evaluation
+        // term eval
         and evalRestOfTermVal (tokens, leftVal: Val) =
             match tokens with
             | Mul :: tail ->
@@ -615,7 +634,7 @@ module Numera =
 
             | _ -> (tokens, leftVal)
 
-        // unary minus evaluation
+        // unary minus eval
         and evalUnaryVal tokens =
             match tokens with
             | Sub :: tail -> 
@@ -723,7 +742,6 @@ module Interpreter =
         | ValString s -> "\"" + s + "\""
 
 
-    // get list of variables in symbol table
     let GetVariables () : string =
         !symbolTable // dereferences the ref
         |> Map.toList
@@ -786,6 +804,7 @@ module Interpreter =
             |> Array.head
             |> fun s -> s.ToLowerInvariant()
 
+        // ensure graphing input is a valid command
         if not (firstWord = "graph" || firstWord = "graphdif" || firstWord = "graphint" || firstWord = "findroot") then
             failwith "Plot command must start with 'graph', 'graphdif', 'graphint', or 'findroot'. Example: graph y= x^2, (-10, 10);"
 
@@ -803,11 +822,13 @@ module Interpreter =
             let exprPart = afterKeyword.Trim()
             let equalsIndex = exprPart.IndexOf('=')
             if equalsIndex < 0 then
-                failwith "Graph command must be of the form: graph y= expression, (min, max);"
+                failwith "Graph command must be of the form: graph y  expression, (min, max);"
 
             let varName    = exprPart.Substring(0, equalsIndex).Trim()
             let exprString = exprPart.Substring(equalsIndex + 1).Trim()
 
+            if String.IsNullOrWhiteSpace(varName) then
+                failwith "Graph command must specify a variable name, e.g. graph y = x^2, (-10, 10);"
             // Default range and no dx
             (firstWord, varName, exprString, -10.0, 10.0, None)
 
@@ -830,7 +851,7 @@ module Interpreter =
 
             let rangeClean = rangePart.TrimStart('(').TrimEnd(')').Trim()
 
-            // tokenise parts of range
+            // tokenise parts of range input
             let parts =
                 rangeClean.Split([|','|], StringSplitOptions.RemoveEmptyEntries)
                 |> Array.map (fun s -> s.Trim())
@@ -838,6 +859,7 @@ module Interpreter =
             if parts.Length <> 2 && parts.Length <> 3 then
                 failwith "Range must contain (min, max) or (min, max, dx)."
 
+            // get minimum x value and maximum x value to display
             let xmin = parseDouble parts.[0]
             let xmax = parseDouble parts.[1]
             if xmin >= xmax then failwith "Range must satisfy min < max."
