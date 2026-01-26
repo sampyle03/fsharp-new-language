@@ -216,6 +216,7 @@ module Numera =
                     let confirmed = floatIntTypeCheck declarationType targetValue
                     (confirmed, afterExpressionTail)
                 | StringType -> raise (System.Exception("Cannot assign string to non-string"))
+                | _ -> raise (System.Exception("Unhandled declaration type"))
             else
                 if Map.containsKey name !symbolTable then
                     let variableFound = (!symbolTable).[name].value
@@ -233,22 +234,6 @@ module Numera =
                             raise (System.Exception(sprintf "Type mismatch: declared %A but got %A" declarationType value))
                 else
                     raise (System.Exception("Undefined variable usage attempted"))
-
-        | _ ->
-            // Covers NumInt / NumFloat / parenthesised expressions / unary minus / etc.
-            // This is the missing case that caused "match cases were incomplete".
-            match declarationType with
-            | FloatType
-            | IntType ->
-                let (afterExpressionTail, floatValue) = evalExpression tokens
-                let targetValue = floatToValType declarationType floatValue
-                let confirmed = floatIntTypeCheck declarationType targetValue
-                (confirmed, afterExpressionTail)
-            | BoolType ->
-                raise (System.Exception("Expected boolean literal or boolean variable"))
-            | StringType ->
-                raise (System.Exception("Expected string literal or string variable"))
-
 
 
     let add(x:int, y:int) : int = x + y
@@ -366,10 +351,12 @@ module Numera =
                 parseExpression tail
             | _ -> parseExpression tokens
 
+        // expression parsing
         and parseExpression tokens =
             let (leftAST, termRest) = parseTerm tokens
             parseRestOfExpression leftAST termRest
 
+        // expression parsing
         and parseRestOfExpression leftAST tokens =
             match tokens with
             | Add :: tail ->
@@ -382,10 +369,12 @@ module Numera =
                 parseRestOfExpression combinedAST termRest
             | _ -> (leftAST, tokens)
 
+        // term parsing
         and parseTerm tokens =
             let (leftAST, unaryRest) = parseUnary tokens
             parseRestOfTerm leftAST unaryRest
 
+        // term parsing
         and parseRestOfTerm leftAST tokens =
             match tokens with
             | Mul :: tail ->
@@ -402,6 +391,7 @@ module Numera =
                 parseRestOfTerm combinedAST powerRest
             | _ -> (leftAST, tokens)
 
+        // unary minus parsing
          and parseUnary tokens =
             match tokens with
             | Sub :: tail ->
@@ -409,6 +399,7 @@ module Numera =
                 (Unary(Neg, innerAST), unaryRest)
             | _ -> parsePower tokens
 
+        // indices parsing
         and parsePower tokens =
             let (baseAST, factorRest) = parseFactor tokens
             match factorRest with
@@ -417,6 +408,7 @@ module Numera =
                 (Binary(ASTPower, baseAST, expAST), powerRest)
             | _ -> (baseAST, factorRest)
 
+        // factor parsing
         and parseFactor tokens =
             match tokens with
             | NumInt n :: tail -> (Number (float n), tail)
@@ -533,7 +525,6 @@ module Numera =
             sample 0 []
 
         // differentiation and integration logic moved to Intepreter
-
         and evalStatement tokens =
             match tokens with
             | Graph :: Identifier name :: Equals :: tail ->
@@ -571,13 +562,16 @@ module Numera =
                 | _ -> (rem, valueFloat)
 
 
+        // expression evaluation
         and evalExpressionFloat tokens =
             let (rem, v) = evalExpressionVal tokens
             (rem, valToFloat v)
 
+        // expression evaluation
         and evalExpressionVal tokens =
             (evalTermVal >> evalRestOfExpressionVal) tokens
 
+        // expression evaluation
         and evalRestOfExpressionVal (tokens, leftVal: Val) =
             match tokens with
             | Add :: tail ->
@@ -590,8 +584,10 @@ module Numera =
                 evalRestOfExpressionVal (tokenRemainder, result)
             | _ -> (tokens, leftVal)
 
+        // term evaluation
         and evalTermVal tokens = (evalUnaryVal >> evalRestOfTermVal) tokens
 
+        // term evaluation
         and evalRestOfTermVal (tokens, leftVal: Val) =
             match tokens with
             | Mul :: tail ->
@@ -619,7 +615,7 @@ module Numera =
 
             | _ -> (tokens, leftVal)
 
-
+        // unary minus evaluation
         and evalUnaryVal tokens =
             match tokens with
             | Sub :: tail -> 
@@ -632,6 +628,7 @@ module Numera =
                 (tokenRemainder, neg)
             | _ -> evalPowerVal tokens
 
+        // indices evaluation
         and evalPowerVal tokens =
             let (remainderAfterBase, baseVal) = evalFactorVal tokens
             match remainderAfterBase with
@@ -648,6 +645,7 @@ module Numera =
                     (tokenRemainder, ValFloat (baseFloat ** exponentFloat))
             | _ -> (remainderAfterBase, baseVal)
 
+        // factor evaluation
         and evalFactorVal tokens =
             match tokens with 
             | NumInt n :: tail -> (tail, ValInt n)
@@ -725,6 +723,7 @@ module Interpreter =
         | ValString s -> "\"" + s + "\""
 
 
+    // get list of variables in symbol table
     let GetVariables () : string =
         !symbolTable // dereferences the ref
         |> Map.toList
@@ -804,13 +803,11 @@ module Interpreter =
             let exprPart = afterKeyword.Trim()
             let equalsIndex = exprPart.IndexOf('=')
             if equalsIndex < 0 then
-                failwith "Graph command must be of the form: graph y  expression, (min, max);"
+                failwith "Graph command must be of the form: graph y= expression, (min, max);"
 
             let varName    = exprPart.Substring(0, equalsIndex).Trim()
             let exprString = exprPart.Substring(equalsIndex + 1).Trim()
 
-            if String.IsNullOrWhiteSpace(varName) then
-                failwith "Graph command must specify a variable name, e.g. graph y = x^2, (-10, 10);"
             // Default range and no dx
             (firstWord, varName, exprString, -10.0, 10.0, None)
 
@@ -833,6 +830,7 @@ module Interpreter =
 
             let rangeClean = rangePart.TrimStart('(').TrimEnd(')').Trim()
 
+            // tokenise parts of range
             let parts =
                 rangeClean.Split([|','|], StringSplitOptions.RemoveEmptyEntries)
                 |> Array.map (fun s -> s.Trim())
