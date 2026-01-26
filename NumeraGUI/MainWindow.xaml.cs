@@ -91,8 +91,7 @@ namespace NumeraGUI
 
         /// <summary>
         /// Opens the plotting window.
-        /// This method does not perform any plotting itself; it simply
-        /// wires the plotting window to the F# interpreter and shows it.
+        /// This method does not perform any plotting itself; it simply wires the plotting window to the F# interpreter and shows it.
         /// </summary>
         private void PlottingButton_Click(object sender, RoutedEventArgs e)
         {
@@ -100,6 +99,9 @@ namespace NumeraGUI
             {
                 Owner = this
             };
+
+            plotWindow.GetVariablesText = () => FSharpLib.Interpreter.GetVariables();
+            plotWindow.RefreshVariables();
 
             // Connect the plotting window to the F# plotting function.
             // The plot window passes a graph command string,

@@ -51,7 +51,7 @@ namespace NumeraGUI
         // Zoom limits for the camera view.
         private const double MinZoom = 0.2;
         private const double MaxZoom = 20.0;
-        private const double ZoomStep = 1.10; // ~10% per wheel notch
+        private const double ZoomStep = 1.10; 
 
         // ===================== Plot Data & Backend Sampling =====================
 
@@ -78,7 +78,7 @@ namespace NumeraGUI
         private double _worldMaxY = 10.0;
 
         // "Fit" bounds are computed from the data (with padding) whenever a new plot is loaded.
-        // Zoom scaling is relative to this fitted window (scale=1.0 is the fitted view).
+        // Zoom scaling is relative to this fitted window 
         private double _fitMinX = -10.0;
         private double _fitMaxX = 10.0;
         private double _fitMinY = -10.0;
@@ -121,7 +121,9 @@ namespace NumeraGUI
 
         private void PlotWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            RefreshVariables();
             DrawPlot();
+            
         }
 
         // ===================== Small Utilities =====================
@@ -137,7 +139,7 @@ namespace NumeraGUI
         }
 
         /// <summary>
-        /// Returns true if a value is a real finite number (not NaN or Infinity).
+        /// Returns true if a value is a real finite number
         /// </summary>
         private static bool IsFinite(double v) =>
             !(double.IsNaN(v) || double.IsInfinity(v));
@@ -166,6 +168,12 @@ namespace NumeraGUI
                 return trimmed.Trim(); // user didn't type a range
         }
 
+        private void ShowPlotError(string message)
+        {
+            ErrorBox.Text = $"> {message}";
+        }
+
+
         /// <summary>
         /// Builds a full graph command string that the F# parser already understands.
         /// We use invariant formatting so decimals always parse reliably.
@@ -175,6 +183,22 @@ namespace NumeraGUI
             string f(double v) => v.ToString("G17", System.Globalization.CultureInfo.InvariantCulture);
             return $"{prefix}, ({f(xmin)}, {f(xmax)}, {f(dx)});";
         }
+
+        // Delegate set by MainWindow to fetch current variables text from F#
+        public Func<string> GetVariablesText { get; set; }
+
+        public void RefreshVariables()
+        {
+            try
+            {
+                VariablesBox.Text = GetVariablesText?.Invoke() ?? string.Empty;
+            }
+            catch
+            {
+                
+            }
+        }
+
 
         // ===================== Fit / Camera Helpers =====================
 
@@ -245,7 +269,6 @@ namespace NumeraGUI
 
         /// <summary>
         /// Picks a step size based on the current visible x-span and canvas width.
-        /// The idea is roughly "one point per pixel", clamped so it stays responsive.
         /// </summary>
         private double ComputeDxForCurrentView(double xmin, double xmax)
         {
@@ -274,7 +297,7 @@ namespace NumeraGUI
 
         /// <summary>
         /// Requests a fresh set of points from the F# backend using the currently visible x-range.
-        /// This is what makes the curve feel like it continues "forever" when you pan/zoom.
+        /// This is what makes the curve feel like it continues infinitely when you pan/zoom.
         /// </summary>
         private void ResamplePointsForCurrentView()
         {
@@ -297,7 +320,6 @@ namespace NumeraGUI
             {
                 var newPoints = GetPointsForExpression(cmd);
 
-                // IMPORTANT:
                 // Replace the points without refitting the view, otherwise the user's pan/zoom gets undone.
                 _points.Clear();
                 if (newPoints != null)
@@ -328,21 +350,20 @@ namespace NumeraGUI
             if (string.IsNullOrWhiteSpace(expr))
                 return;
 
+            RefreshVariables();
+
             // Save the command prefix so pan/zoom can rebuild the command with a new range.
             _baseGraphCommandPrefix = ExtractCommandPrefix(expr);
 
             try
             {
+                ErrorBox.Text = string.Empty;
                 var newPoints = GetPointsForExpression(expr);
                 PlotFromCoordinates(newPoints);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
-                    $"Error while plotting:\n{ex.Message}",
-                    "Plot Error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
+                ShowPlotError(ex.Message);
             }
         }
 
@@ -412,7 +433,6 @@ namespace NumeraGUI
 
             ApplyViewToWorldBounds();
 
-            // Option A: refresh points for the visible window
             ResamplePointsForCurrentView();
 
             e.Handled = true;
@@ -454,7 +474,7 @@ namespace NumeraGUI
 
         /// <summary>
         /// Update camera centre while dragging to pan.
-        /// We debounce the backend call, otherwise it would be too spammy during a drag.
+        /// We debounce the backend call, otherwise it would be too glitchy during a drag.
         /// </summary>
         private void PlotCanvas_MouseMove(object sender, MouseEventArgs e)
         {

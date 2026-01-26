@@ -5,9 +5,7 @@
 *
 * The Help window is a simple, modal dialog that displays
 * instructions and usage information for the user.
-*
-* It does not interact with the interpreter or application state;
-* it purely provides guidance and can be closed by the user.
+* 
 */
 
 using System.Windows;

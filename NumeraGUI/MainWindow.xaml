@@ -1,5 +1,5 @@
 <!--
-    MainWindow.xaml
+MainWindow.xaml
 
     This file defines the layout of the main Numera application window.
 
@@ -9,9 +9,7 @@
       - displaying output, errors, and current variables,
       - and providing navigation to plotting and help windows.
 
--->
-
-<Window x:Class="NumeraGUI.MainWindow"
+--><Window x:Class="NumeraGUI.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Numera"
@@ -404,3 +402,6 @@
         </Grid>
     </DockPanel>
 </Window>
+
+
+

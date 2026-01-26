@@ -58,7 +58,7 @@
                 <LineBreak/>
                 <Run Text="Multi-line expressions are supported."/>
                 <LineBreak/>
-                <Run Text="The 'Clear button will clear the output, errors and input boxes but your variables will remain."/>
+                <Run Text="The 'Clear' button will clear the output, errors and input boxes but your variables will remain."/>
                 <LineBreak/>
                 <Bold>Once variables are defined they cannot be redefined.</Bold>
 

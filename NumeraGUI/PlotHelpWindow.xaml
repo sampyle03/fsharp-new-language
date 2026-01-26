@@ -31,7 +31,7 @@
         <!-- Scrollable text content -->
         <ScrollViewer Grid.Row="1"
                       VerticalScrollBarVisibility="Auto"
-                      Margin="20">
+                      Margin="10,10,20,20">
             <TextBlock FontFamily="Courier New"
                        FontSize="16"
                        TextWrapping="Wrap"
@@ -45,6 +45,12 @@
                 <Run Text="graphdif y = expression, (x_min, x_max, optional step);"/>
                 <LineBreak/>
                 <Run Text="graphint y = expression, (x_min, x_max, optional step);"/>
+                <LineBreak/>
+                <Bold>graph</Bold><Run Text=" plots the function y = f(x)"/>
+                <LineBreak/>
+                <Bold>graphdif</Bold><Run Text=" plots the numerical derivative dy/dx of the function"/>
+                <LineBreak/>
+                <Bold>graphint</Bold><Run Text=" plots the numerical integral of the function from x_min to x"/>    
                 <LineBreak/><LineBreak/>
 
                 <Bold>Examples:</Bold>
@@ -57,22 +63,15 @@
                 <LineBreak/><LineBreak/>
 
                 <Run Text="Any variables used must have been previously defined."/>
-                <LineBreak/><LineBreak/>
-
-                <Bold>graph</Bold><Run Text=" plots the function y = f(x)"/>
-                <LineBreak/>
-                <Bold>graphdif</Bold><Run Text=" plots the numerical derivative dy/dx of the function"/>
-                <LineBreak/>
-                <Bold>graphint</Bold><Run Text=" plots the numerical integral of the function from x_min to x"/>
-                <LineBreak/><LineBreak/>
-
+                <LineBreak/>               
                 <Run Text="If no step size is defined, the default of 200 samples will be used."/>
-                <LineBreak/><LineBreak/>
-
+                <LineBreak/>
                 <Run Text="Click the 'Plot' button to generate the graph."/>
-                <LineBreak/><LineBreak/>
-
+                <LineBreak/>
                 <Run Text="Use the 'Clear' button for a clean plotting area."/>
+                <LineBreak/><LineBreak/>
+                
+                <Bold>To zoom and pan:</Bold><Run Text=" Drag across the plot to pan and pinch or hold and scroll on a mouse wheel to zoom. Right click to reset the view."/>
 
             </TextBlock>
 
